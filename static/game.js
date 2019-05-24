@@ -3,19 +3,16 @@ socket.on('message', function(data) {
     console.log(data);
 });
 
-socket.emit('data', ['gary is really straight', 2387128736]);
+socket.emit('data', 1);
 
 var x = 0;
+var y = 0;
 
 function setup() {
-    createCanvas(640, 480);
-  }
-  
-  function draw() {
-    if (mouseIsPressed) {
-      fill(0);
-    } else {
-      fill(255);
-    }
-    ellipse(mouseX, mouseY, 80, 80);
-  }
+    createCanvas(window.innerWidth - 20, window.innerHeight - 20);
+    fill(5, 5, 5);
+}
+
+function draw() {
+    rect(0 + x, 0 + y, 100, 100);
+}
