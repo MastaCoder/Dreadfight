@@ -14,14 +14,24 @@ app.get('/', function(request, response) {
     response.sendFile(path.join(__dirname, 'index.html')); // send index
 });
 
+console.log("[INFO] DreadFight - A driving top-down shooter.")
+console.log("[INFO] Backend developed by Makan, Gary, & Anthony");
+
 // Initialization
 server.listen(5000, function() {
-    console.log('Starting server on port 5000');
+    console.log("[GAME] Server is listening on port 5000.")
 });
 
+console.log("---------------------------------------------")
+
+// ---------------- GAME CODE -----------------------
+
+players = []
+
 io.on('connection', function(socket) {
-    console.log("user has connected");
-    socket.on('data', function(msg) {
-        console.log(msg)
+    players.push(socket);
+    console.log("[GAME] Player connected.");
+    socket.on('message', function(msg) {
+        
     });
 });

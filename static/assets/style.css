@@ -1,0 +1,9 @@
+.p5Canvas {
+    position: absolute !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    margin: auto !important;
+    border: black solid !important;
+}
