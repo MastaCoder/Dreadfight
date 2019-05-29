@@ -6,14 +6,14 @@ function tree(){
     */
     noStroke()
     fill(24, 73, 24);
-    ellipse(503, 80, 100, 100);
+    ellipse(0, 0, 100, 100);
 
     fill(22, 117, 22);
-    ellipse(503, 80, 62.5, 62.5);
+    ellipse(0, 0, 62.5, 62.5);
 
     strokeWeight(1);
     stroke(0);
     fill(86, 47, 11);
-    ellipse(503, 80, 25, 25);
+    ellipse(0, 0, 25, 25);
 
 }
