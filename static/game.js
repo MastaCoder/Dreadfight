@@ -6,6 +6,8 @@ var socket = io();
 // });
 
 /* VARIABLES */
+
+
 var controls = {
     'w': false,
     'a': false,
