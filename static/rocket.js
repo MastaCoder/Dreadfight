@@ -3,7 +3,6 @@ function rocket(){
     cannon bullet:
         tri: b = 20, h = 20
         rect w = 10, h = 15
-
         fire: 
         2 pixels apart from the body
         b = 10, h = 5
