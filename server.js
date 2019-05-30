@@ -26,12 +26,23 @@ console.log("---------------------------------------------")
 
 // ---------------- GAME CODE -----------------------
 
-players = []
+clients = {}; 
+players = {}; // Type, Location, Rotation
 
 io.on('connection', function(socket) {
-    players.push(socket);
-    console.log("[GAME] Player connected.");
-    socket.on('message', function(msg) {
-        
+    clients[socket.id] = socket;
+    players[socket.id] = [1, [0, 0], 0];
+    socket.emit("handshake", players);
+    socket.broadcast.emit("catchup", ['connected', socket.id, [200, 200], 0]);
+    console.log("[GAME] Player connected:", socket.id);
+    socket.on('disconnect', function() {
+        console.log("[GAME] Player disconnected:", socket.id);
+        delete clients[socket.id];
+        delete players[socket.id];
+        socket.broadcast.emit("catchup", ['disconnect', socket.id])
+    });
+    socket.on('update', function(data) { // loc, angle
+        players[socket.id] = [1, data[0], data[1]];
+        socket.broadcast.emit("catchup", ['update', socket.id, data[0], data[1]]);
     });
 });
