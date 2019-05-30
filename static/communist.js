@@ -1,5 +1,4 @@
 function communist(){
-    
     push();
     translate(375, 350);
 
