@@ -7,4 +7,9 @@ function tires(){
     stroke(135, 143, 155);
     fill(255);
     ellipse(0, 0, 20, 20);
+
+    noStroke();
+    fill(135, 143, 155);
+    ellipse(0, 0, 10, 10);
+    
 }
