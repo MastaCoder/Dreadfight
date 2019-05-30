@@ -19,7 +19,6 @@ function draw() {
     textSize(32);
     render(250 , 200);
     pop();
-    //console.log(mouseX, mouseY)
     console.log(main.screen, mouseX, mouseY)
 }
 
@@ -38,7 +37,7 @@ function render(x, y) {
         text('test', x, y , 200, 100);
     }
     if (main.screen == 'howToPlay'){
-        var keys = [['[W]', 'Forward'],['[A]', 'Turn Left']]
+        var keys = [['[W]', 'Forward'], ['[A]', 'Turn Left'],]
         for (i = 0; i < keys.length; i++){
             text(keys[i][0] + ' ' + keys[i][1], x, y + ((i - 2) * 50));
         }
