@@ -27,13 +27,24 @@ console.log("---------------------------------------------")
 // ---------------- GAME CODE -----------------------
 
 clients = {}; 
-players = {}; // Type, Location, Rotation
+players = {}; // Type, Location, Rotation, Car Type
+
+// Map Generation
+map = [];
+for (let i = 0; i < 50; i++) {
+    let x = Math.floor(Math.random() * 2001) - 1000,
+        y = Math.floor(Math.random() * 2001) - 1000,
+        obj = Math.floor(Math.random() * (3 - 0)) + 0;
+        size = Math.floor(Math.random() * (50 - 0)) + 0;
+    map.push([[x, y], obj, size]);
+}
 
 io.on('connection', function(socket) {
+    let car_type = Math.floor(Math.random() * (3 - 0)) + 0;
     clients[socket.id] = socket;
-    players[socket.id] = [1, [0, 0], 0];
-    socket.emit("handshake", players);
-    socket.broadcast.emit("catchup", ['connected', socket.id, [200, 200], 0]);
+    players[socket.id] = [1, [0, 0], 0, car_type];
+    socket.emit("handshake", [players, map]);
+    socket.broadcast.emit("catchup", ['connected', socket.id, [0, 0], 0, car_type]);
     console.log("[GAME] Player connected:", socket.id);
     socket.on('disconnect', function() {
         console.log("[GAME] Player disconnected:", socket.id);
@@ -42,7 +53,8 @@ io.on('connection', function(socket) {
         socket.broadcast.emit("catchup", ['disconnect', socket.id])
     });
     socket.on('update', function(data) { // loc, angle
-        players[socket.id] = [1, data[0], data[1]];
+        players[socket.id][1] = data[0];
+        players[socket.id][2] = data[1];
         socket.broadcast.emit("catchup", ['update', socket.id, data[0], data[1]]);
     });
 });

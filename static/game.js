@@ -21,12 +21,12 @@ var player,
     connected = false;
 
 class Car {
-    constructor(x, y, id) {
+    constructor(x, y, id, type) {
         this.x = x;
         this.y = y;
         this.angle = 0;
         this.velocity = [0, 0]; // x, y
-        this.type = 0;
+        this.type = type;
         this.id = id;
     }
 
@@ -51,27 +51,74 @@ class Car {
     }
 
     draw() {
-        noStroke();
-        fill(0);
-        rect(0, 0, 50, 100);
+        if (this.type == 0) {
+            noStroke();
+            fill(0);
+            rect(0, 0, 50, 100);
+            fill(255, 0, 0);
+            rect(0, 37.5, 10, 5);
+            fill(232, 171, 127);
+            rect(0, 0, 50, 60);
+            strokeWeight(3);
+            stroke(0);
+            rect(-12, 0, 16, 8);
+            rect(12, 0, 16, 8);
+            noStroke();
+            fill(0);
+            rect(-26.5, -20, 3, 20);
+            rect(-26.5, 30, 3, 20);
+            rect(26.5, -20, 3, 20);
+            rect(26.5, 30, 3, 20);
+        } else if (this.type == 1) {
+            strokeWeight(2);
+            stroke(0);
+            fill(255, 0, 0);
+            rect(0, 0, 50, 100);
+            noStroke();
+            fill(251, 255, 17);
+            rect(0, -12.5, 10, 5);
+            rect(7.5, 0, 5, 25);
+            rect(0, 12.5, 10, 5);
+            rect(-12.5, 0, 5, 10);
+            rect(5, 0, 30, 5);
+            rect(-7.5, 15, 5, 10);
+            triangle(-15, -5, -10, -10, -10, -5);
+            noStroke();
+            fill(0);
+            rect(-26.5, -20, 3, 20);
+            rect(-26.5, 30, 3, 20);
+            rect(26.5, -20, 3, 20);
+            rect(26.5, 30, 3, 20);
+        } else if (this.type == 2) {
+            strokeWeight(1)
+            fill(255);
+            rect(0, 0, 50, 100);
+            
+            noStroke();
+            fill(255, 0, 0);
+            rect(20, 0, 10, 100);
+            rect(-20, 0, 10, 100);
+            rect(0, 45, 30, 10);
 
-        fill(255, 0, 0);
-        rect(0, 37.5, 10, 5);
+            fill(0)
+            rect(0, 0, 10, 100);
+            rect(12.5, -45, 5, 10);
+            rect(-12.5, -45, 5, 10);
 
-        fill(232, 171, 127);
-        rect(0, 0, 50, 60);
+            fill(0, 0, 255);
+            rect(-7.5, -45, 5, 10);
+            rect(7.5, -45, 5, 10);
 
-        strokeWeight(3);
-        stroke(0);
-        rect(-12, 0, 16, 8);
-        rect(12, 0, 16, 8);
+            fill(244, 241, 66);
+            rect(20, 45, 10, 10);
+            rect(-20, 45, 10, 10);
 
-        noStroke();
-        fill(0)
-        rect(-26.5, -20, 3, 20)
-        rect(-26.5, 30, 3, 20)
-        rect(26.5, -20, 3, 20)
-        rect(26.5, 30, 3, 20)
+            fill(0)
+            rect(-26.5, -20, 3, 20)
+            rect(-26.5, 30, 3, 20)
+            rect(26.5, -20, 3, 20)
+            rect(26.5, 30, 3, 20)
+        }
     }
 
     rotate(angle) {
@@ -87,7 +134,7 @@ class Car {
             angle = 0; // treat as 0
         }
 
-        friction = 1.75; // friction vector
+        friction = 1.5; // friction vector
 
         // TR 1
         if (this.velocity[0] > 0 && this.velocity[1] > 0) {
@@ -149,18 +196,55 @@ class Car {
     }
 }
 
-socket.on('handshake', function(data) {
-    player = new Car(200, 200, socket.id);
-    for (let i in data) {
-        if (socket.id != i)
-            players[i] = new Car(data[i][1][0], data[i][1][1], i);
+class Scene {
+    constructor(x, y, type, size) {
+        this.type = 0;
+        this.x = x;
+        this.y = y;
+        this.size = size;
     }
+
+    render(off_x, off_y) {
+        push();
+        translate(this.x + 375 - off_x, this.y + 350 - off_y);
+        this.draw();
+        pop();
+    }
+
+    draw() {
+        if (this.type == 0) {
+            strokeWeight(1);
+            stroke(0)
+            fill(136, 147, 136);
+            ellipse(0, 0, 50, 50);
+            
+            noStroke();
+            fill(191, 201, 191);
+            ellipse(12.5, -5, 15, 15);
+        }
+    }
+}
+
+socket.on('handshake', function(data) {
+    for (let i in data[1]) {
+        let obj = data[1][i];
+        scene.push(new Scene(obj[0][0], obj[0][1], 0, 100));
+    }
+
+    for (let i in data[0]) {
+        let car = data[0][i];
+        if (socket.id != i)
+            players[i] = new Car(car[1][0], car[1][1], i, car[3]);
+        else
+            player = new Car(0, 0, socket.id, car[3]);
+    }
+
     connected = true;
 });
 
 socket.on('catchup', function(data) {
     if (data[0] == "connected") { // ['connected', socket.id, [200, 200], 0])
-        players[data[1]] = new Car(data[2][0], data[2][1], data[3]);
+        players[data[1]] = new Car(data[2][0], data[2][1], data[3], data[4]);
     } else if (data[0] == "update") { // ['update', socket.id, data[0], data[1]] - data[0] loc - data[1] angle
         players[data[1]].x = data[2][0];
         players[data[1]].y = data[2][1];
@@ -210,21 +294,27 @@ function stat_render() {
 
 function keyControl() {
     if (controls['w']) {
-        let vectors = calculate_vector(player.angle, 3); // check for vectors
+        let vectors = calculate_vector(player.angle, 2.2); // check for vectors
         player.boost(vectors[0], vectors[1]);
     } else if (controls['s']) {
-        let vectors = calculate_vector(player.angle, 2); // check for vectors
-        player.boost(-vectors[0], -vectors[1]);
+        let drop_angle = player.angle - 180;
+        if (player.angle - 180 < 0) 
+            drop_angle = 180 + player.angle;
+        let vectors = calculate_vector(drop_angle, 1.6); // check for vectors
+        player.boost(vectors[0], vectors[1]);
     }
     
-    if (controls['a']) {
-        if (player.angle - 5 < 0)
-            player.angle = 360 + player.angle;
-        player.angle -= 5;
-    } else if (controls['d']) {
-        if (player.angle + 5 > 360)
-            player.angle = player.angle + 5 - 360;
-        player.angle += 5;
+    if (player.velocity[0] != 0 || player.velocity[1] != 0) {
+        let turn_angle = -1 * ((Math.sqrt(player.velocity[0]**2 + player.velocity[1]**2) / 70) ** 2) + 2.8;
+        if (controls['a']) {
+            if (player.angle - turn_angle < 0)
+                player.angle = 360 + player.angle;
+            player.angle -= turn_angle;
+        } else if (controls['d']) {
+            if (player.angle + turn_angle > 360)
+                player.angle = player.angle + turn_angle - 360;
+            player.angle += turn_angle;
+        }
     }
     
     socket.emit('update', [[player.x, player.y], player.angle])
@@ -262,5 +352,4 @@ function draw() {
 function setup() {
     createCanvas(750, 700);
     rectMode(CENTER);
-    player = new Car(0, 0);
 }
