@@ -1,4 +1,6 @@
 function tires(){
+    push();
+    translate(350, 375);
     noStroke();
     fill(0);
     ellipse(0, 0, 40, 40);
@@ -11,5 +13,7 @@ function tires(){
     noStroke();
     fill(135, 143, 155);
     ellipse(0, 0, 20, 20);
+
+    pop();
     
 }
