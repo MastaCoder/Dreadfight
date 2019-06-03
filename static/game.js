@@ -7,7 +7,7 @@ var socket = io();
 
 /* VARIABLES */
 class main{
-    constructor(screen = 'main'){
+    constructor(screen = 'main') {
         this.screen = screen;
     }
 }
@@ -234,6 +234,8 @@ class Scene {
             noStroke();
             fill(191, 201, 191);
             ellipse(12.5, -5, 15, 15);
+        } else if (this.type == 1) {
+            
         }
     }
 }
@@ -301,6 +303,7 @@ function stat_render() {
     push();
     textAlign(LEFT);
     textSize(13);
+    textAlign(LEFT);
     text("Tick: " + frameCount, 10, 20);
     text("Location: " + [Math.round(player.x), Math.round(player.y)], 10, 40);
     text("Angle: " + player.angle, 10, 60);
@@ -310,29 +313,28 @@ function stat_render() {
 
 function keyControl() {
     if (controls['w']) {
-        let vectors = calculate_vector(player.angle, 2.2); // check for vectors
+        let vectors = calculate_vector(player.angle, 1.3); // check for vectors
         player.boost(vectors[0], vectors[1]);
     } else if (controls['s']) {
         let drop_angle = player.angle - 180;
         if (player.angle - 180 < 0) 
             drop_angle = 180 + player.angle;
-        let vectors = calculate_vector(drop_angle, 1.6); // check for vectors
+        let vectors = calculate_vector(drop_angle, 1.0); // check for vectors
         player.boost(vectors[0], vectors[1]);
     }
-    
-    if (player.velocity[0] != 0 || player.velocity[1] != 0) {
-        let turn_angle = -1 * ((Math.sqrt(player.velocity[0]**2 + player.velocity[1]**2) / 70) ** 2) + 2.8;
-        if (controls['a']) {
-            if (player.angle - turn_angle < 0)
-                player.angle = 360 + player.angle;
-            player.angle -= turn_angle;
-        } else if (controls['d']) {
-            if (player.angle + turn_angle > 360)
-                player.angle = player.angle + turn_angle - 360;
-            player.angle += turn_angle;
-        }
+
+        let speed = Math.sqrt(player.velocity[0]**2 + player.velocity[1]**2)
+    let turn_angle = (-(1 / 2750)) * ((speed - 50)**2) + 1.1;
+    if (controls['a']) {
+        if (player.angle - turn_angle < 0)
+            player.angle = 360 + player.angle;
+        player.angle -= turn_angle;
+    } else if (controls['d']) {
+        if (player.angle + turn_angle > 360)
+            player.angle = player.angle + turn_angle - 360;
+        player.angle += turn_angle;
     }
-    
+
     socket.emit('update', [[player.x, player.y], player.angle])
 }
 
@@ -356,7 +358,7 @@ function draw() {
     textSize(32);
     if (connected) {
         renderScreen(375, 200);
-        if (main.screen == 'play'){
+        if (main.screen == 'play') {
             keyControl();
             render();
             keyControl();
@@ -375,7 +377,7 @@ function draw() {
 
 /* FUNCTIONS */
 /** Function to change preferred settings applied throughout the project */
-function style(){
+function style() {
     rectMode(CENTER);
     textAlign(CENTER, CENTER)
 }
@@ -391,7 +393,7 @@ function setup() {
  * @param {integer} y - y position of center of screen
  */
 function renderScreen(x, y) { 
-    if (main.screen == 'main'){
+    if (main.screen == 'main') {
         text('Welcome To Dread Fight', x, y - 100);
         rect(x, y, 200, 50);
         rect(x, y + 100, 200, 50);
@@ -400,21 +402,21 @@ function renderScreen(x, y) {
         text('How to Play', x, y + 100);
         text('Credits', x, y + 200);
     }
-    if (main.screen == 'play'){
+    if (main.screen == 'play') {
     }
-    if (main.screen == 'howToPlay'){
+    if (main.screen == 'howToPlay') {
         var keys = [['[W]', '- Forward'], ['[A]', '- Turn Left'],['[S]', '- Backward'], ['[D]', '- Turn Right']]
-        for (i = 0; i < keys.length; i++){
+        for (i = 0; i < keys.length; i++) {
             text(keys[i][0] + ' ' + keys[i][1], x, y + ((i - 2) * 50));
         }
     }
-    if (main.screen == 'credits'){
+    if (main.screen == 'credits') {
         text('By Makan, Gary & Anthony', x, scrollY + 200);
         text('A Top-Down Car Shooter',x, scrollY + 100)
         text('DREAD FIGHT', x, scrollY);
         scrollY -= 1;
     }
-    if (main.screen == 'howToPlay' || main.screen == 'credits'){
+    if (main.screen == 'howToPlay' || main.screen == 'credits') {
         push();
         textSize(40);
         rectMode(CORNER);
@@ -427,16 +429,13 @@ function renderScreen(x, y) {
 
 /** Function to change game state based on location of mouse click */
 function mousePressed() {
-    if ((mouseX >= 280 && mouseX <= 480) && (mouseY >= 180 && mouseY <= 230) && (main.screen == 'main')){
+    if ((mouseX >= 280 && mouseX <= 480) && (mouseY >= 180 && mouseY <= 230) && (main.screen == 'main'))
         main.screen = 'play';
-    }
-    else if ((mouseX >= 280 && mouseX <= 480) && (mouseY >= 280 && mouseY <= 330) && (main.screen == 'main')){
+    else if ((mouseX >= 280 && mouseX <= 480) && (mouseY >= 280 && mouseY <= 330) && (main.screen == 'main'))
         main.screen = 'howToPlay';
-    }
-    else if ((mouseX >= 280 && mouseX <= 480) && (mouseY >= 380 && mouseY <= 430) && (main.screen == 'main')){
+    else if ((mouseX >= 280 && mouseX <= 480) && (mouseY >= 380 && mouseY <= 430) && (main.screen == 'main'))
         main.screen = 'credits';
-    }
-    else if ((mouseX >= 550 && mouseX <= 750) && (main.screen == 'howToPlay' || main.screen == 'credits') && (mouseY >= 650 && mouseY <= 700)){
+    else if ((mouseX >= 550 && mouseX <= 750) && (main.screen == 'howToPlay' || main.screen == 'credits') && (mouseY >= 650 && mouseY <= 700)) {
         main.screen = 'main';
         scrollY = 700;
     }
