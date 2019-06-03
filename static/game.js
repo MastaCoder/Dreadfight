@@ -13,7 +13,7 @@ class main{
 }
 
 main = new main();
-
+scrolly = 700;
 
 var controls = {
     'w': false,
