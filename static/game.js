@@ -293,6 +293,7 @@ function calculate_vector(angle, constant) {
 
 function stat_render() {
     push();
+    textAlign(LEFT);
     textSize(13);
     text("Tick: " + frameCount, 10, 20);
     text("Location: " + [Math.round(player.x), Math.round(player.y)], 10, 40);
@@ -330,21 +331,19 @@ function keyControl() {
 }
 
 function keyPressed() {
-    if (key in controls)
-        controls[key] = true;
-
+    if (key.toLowerCase() in controls)
+        controls[key.toLowerCase()] = true;
     return false;
 }
 
 function keyReleased() {
-    if (key in controls)
-        controls[key] = false;
+    if (key.toLowerCase() in controls)
+        controls[key.toLowerCase()] = false;
 
     return false;
 }
 
 function draw() {
-    console.log(connected)
     background(126, 200, 80);
     textSize(32);
     if (connected) {
