@@ -346,9 +346,7 @@ function keyReleased() {
 function draw() {
     console.log(connected)
     background(126, 200, 80);
-    push();
     textSize(32);
-    pop();
     if (connected) {
         renderScreen(375, 200);
         if (main.screen == 'play'){
