@@ -6,6 +6,13 @@ var socket = io();
 // });
 
 /* VARIABLES */
+class main{
+    constructor(screen = 'main'){
+        this.screen = screen;
+    }
+}
+
+main = new main();
 
 
 var controls = {
@@ -285,11 +292,13 @@ function calculate_vector(angle, constant) {
 }
 
 function stat_render() {
+    push();
     textSize(13);
     text("Tick: " + frameCount, 10, 20);
     text("Location: " + [Math.round(player.x), Math.round(player.y)], 10, 40);
     text("Angle: " + player.angle, 10, 60);
     text("Clients: " + (Object.keys(players).length + 1), 10, 80);
+    pop();
 }
 
 function keyControl() {
@@ -335,21 +344,95 @@ function keyReleased() {
 }
 
 function draw() {
+    console.log(connected)
     background(126, 200, 80);
+    push();
+    textSize(32);
+    pop();
     if (connected) {
-        keyControl();
-        render();
-        stat_render();
-        player.move_velocity();
+        renderScreen(375, 200);
+        if (main.screen == 'play'){
+            keyControl();
+            render();
+            keyControl();
+            render();
+            stat_render();
+            player.move_velocity();
+        }
     } else {
+        push();
         fill(0);
         textSize(50);
         text("Connecting..", 375 - (textWidth("Connecting..") / 2), 100);
+        pop();
     }
 }
 
 /* FUNCTIONS */
-function setup() {
-    createCanvas(750, 700);
+/** Function to change preferred settings applied throughout the project */
+function style(){
     rectMode(CENTER);
+    textAlign(CENTER, CENTER)
+}
+
+function setup() {
+    style()
+    createCanvas(750, 700);
+}
+
+/**
+ * Function to create text and text boxes
+ * @param {integer} x - x position of center of screen
+ * @param {integer} y - y position of center of screen
+ */
+function renderScreen(x, y) { 
+    if (main.screen == 'main'){
+        text('Welcome To Dread Fight', x, y - 100);
+        rect(x, y, 200, 50);
+        rect(x, y + 100, 200, 50);
+        rect(x, y + 200, 200, 50);
+        text('Play', x, y);
+        text('How to Play', x, y + 100);
+        text('Credits', x, y + 200);
+    }
+    if (main.screen == 'play'){
+    }
+    if (main.screen == 'howToPlay'){
+        var keys = [['[W]', '- Forward'], ['[A]', '- Turn Left'],['[S]', '- Backward'], ['[D]', '- Turn Right']]
+        for (i = 0; i < keys.length; i++){
+            text(keys[i][0] + ' ' + keys[i][1], x, y + ((i - 2) * 50));
+        }
+    }
+    if (main.screen == 'credits'){
+        text('By Makan, Gary & Anthony', x, scrollY + 200);
+        text('A Top-Down Car Shooter',x, scrollY + 100)
+        text('DREAD FIGHT', x, scrollY);
+        scrollY -= 1;
+    }
+    if (main.screen == 'howToPlay' || main.screen == 'credits'){
+        push();
+        textSize(40);
+        rectMode(CORNER);
+        textAlign(LEFT, TOP)
+        rect(550, 650, 200, 100);
+        text('Go Back', 550, 650, 200, 100);
+        pop();
+    }
+}
+
+/** Function to change game state based on location of mouse click */
+function mousePressed() {
+    if ((mouseX >= 280 && mouseX <= 480) && (mouseY >= 180 && mouseY <= 230) && (main.screen == 'main')){
+        main.screen = 'play';
+    }
+    else if ((mouseX >= 280 && mouseX <= 480) && (mouseY >= 280 && mouseY <= 330) && (main.screen == 'main')){
+        main.screen = 'howToPlay';
+    }
+    else if ((mouseX >= 280 && mouseX <= 480) && (mouseY >= 380 && mouseY <= 430) && (main.screen == 'main')){
+        main.screen = 'credits';
+    }
+    else if ((mouseX >= 550 && mouseX <= 750) && (main.screen == 'howToPlay' || main.screen == 'credits') && (mouseY >= 650 && mouseY <= 700)){
+        main.screen = 'main';
+        scrollY = 700;
+    }
 }

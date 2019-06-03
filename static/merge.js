@@ -145,7 +145,7 @@ class Tree {
 }
 
 /* FUNCTIONS */
-
+/** Function to change preferred settings applied throughout the project */
 function style(){
     rectMode(CENTER);
     textAlign(CENTER, CENTER)
@@ -237,12 +237,17 @@ function draw() {
     }
     push();
     textSize(32);
-    render1(375, 200);
+    renderScreen(375, 200);
     pop();
     console.log(mouseX, mouseY)
 }
 
-function render1(x, y) {
+/**
+ * Function to create text and text boxes
+ * @param {integer} x - x position of center of screen
+ * @param {integer} y - y position of center of screen
+ */
+function renderScreen(x, y) { 
     if (main.screen == 'main'){
         text('Welcome To Dread Fight', x, y - 100);
         rect(x, y, 200, 50);
@@ -278,6 +283,7 @@ function render1(x, y) {
     }
 }
 
+/** Function to change game state based on location of mouse click */
 function mousePressed() {
     if ((mouseX >= 280 && mouseX <= 480) && (mouseY >= 180 && mouseY <= 230) && (main.screen == 'main')){
         main.screen = 'play';
