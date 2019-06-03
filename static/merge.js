@@ -1,5 +1,5 @@
 var socket = io();
-var scrollY = 0;
+var scrollY = 700;
 
 class main{
     constructor(screen = 'main'){
@@ -69,7 +69,7 @@ class Car {
 
         friction = 1.75; // friction vector
 
-        console.log(angle, " - ", Math.abs(this.velocity[0]) / Math.abs(this.velocity[1]));
+        //console.log(angle, " - ", Math.abs(this.velocity[0]) / Math.abs(this.velocity[1]));
 
         // TR 1
         if (this.velocity[0] > 0 && this.velocity[1] > 0) {
@@ -145,9 +145,15 @@ class Tree {
 }
 
 /* FUNCTIONS */
+
+function style(){
+    rectMode(CENTER);
+    textAlign(CENTER, CENTER)
+}
+
 function setup() {
     createCanvas(750, 700);
-    rectMode(CENTER);
+    style()
     player = new Car(0, 0);
     scene.push(new Tree(10, 10))
 }
@@ -231,42 +237,41 @@ function draw() {
     }
     push();
     textSize(32);
-    render1(250 , 200);
+    render1(375, 200);
     pop();
-    console.log(main.screen, mouseX, mouseY)
+    console.log(mouseX, mouseY)
 }
-
 
 function render1(x, y) {
     if (main.screen == 'main'){
-        text('Welcome To ', x, y - 100);
-        push()
-        rectMode(CORNER)
+        text('Welcome To Dread Fight', x, y - 100);
         rect(x, y, 200, 50);
         rect(x, y + 100, 200, 50);
         rect(x, y + 200, 200, 50);
-        text('Play', x, y, 200, 100);
-        text('How to Play', x, y + 100, 200, 100);
-        text('Credits', x, y + 200, 200, 100);
-        pop()
+        text('Play', x, y);
+        text('How to Play', x, y + 100);
+        text('Credits', x, y + 200);
     }
     if (main.screen == 'play'){
+
     }
     if (main.screen == 'howToPlay'){
-        var keys = [['[W]', 'Forward'], ['[A]', 'Turn Left'],]
+        var keys = [['[W]', '- Forward'], ['[A]', '- Turn Left'],['[S]', '- Backward'], ['[D]', '- Turn Right']]
         for (i = 0; i < keys.length; i++){
             text(keys[i][0] + ' ' + keys[i][1], x, y + ((i - 2) * 50));
         }
     }
     if (main.screen == 'credits'){
-        text('A Game by Makan, Gary & Anthony', x - 100, scrollY);
-        scrollY += 1;
+        text('By Makan, Gary & Anthony', x, scrollY + 200);
+        text('A Top-Down Car Shooter',x, scrollY + 100)
+        text('DREAD FIGHT', x, scrollY);
+        scrollY -= 1;
     }
     if (main.screen == 'howToPlay' || main.screen == 'credits'){
         push();
-        textSize(40)
-        push()
-        rectMode(CORNER)
+        textSize(40);
+        rectMode(CORNER);
+        textAlign(LEFT, TOP)
         rect(550, 650, 200, 100);
         text('Go Back', 550, 650, 200, 100);
         pop();
@@ -274,18 +279,18 @@ function render1(x, y) {
 }
 
 function mousePressed() {
-    if ((mouseX >= 250 && mouseX <= 450) && (mouseY >= 200 && mouseY <= 250) && (main.screen == 'main')){
+    if ((mouseX >= 280 && mouseX <= 480) && (mouseY >= 180 && mouseY <= 230) && (main.screen == 'main')){
         main.screen = 'play';
     }
-    else if ((mouseX >= 250 && mouseX <= 450) && (mouseY >= 300 && mouseY <= 350) && (main.screen == 'main')){
+    else if ((mouseX >= 280 && mouseX <= 480) && (mouseY >= 280 && mouseY <= 330) && (main.screen == 'main')){
         main.screen = 'howToPlay';
     }
-    else if ((mouseX >= 250 && mouseX <= 450) && (mouseY >= 400 && mouseY <= 450) && (main.screen == 'main')){
+    else if ((mouseX >= 280 && mouseX <= 480) && (mouseY >= 380 && mouseY <= 430) && (main.screen == 'main')){
         main.screen = 'credits';
     }
     else if ((mouseX >= 550 && mouseX <= 750) && (main.screen == 'howToPlay' || main.screen == 'credits') && (mouseY >= 650 && mouseY <= 700)){
         main.screen = 'main';
-        scrollY = 0;
+        scrollY = 700;
     }
 }
 
