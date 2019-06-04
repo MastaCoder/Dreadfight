@@ -22,6 +22,17 @@ var controls = {
     'd': false
 };
 
+var seconds = 0;
+var el = document.getElementById('seconds-counter');
+
+
+
+function incrementSeconds() {
+    seconds += 1;
+}
+
+var cancel = setInterval(incrementSeconds, 10000);
+
 var player,
     players = {},
     scene = [],
@@ -36,6 +47,7 @@ class Car {
         this.velocity = [0, 0]; // x, y
         this.type = type;
         this.id = id;
+        this.score = 0;
     }
 
     move(up) {
@@ -215,6 +227,11 @@ class Car {
         if (Math.sqrt((this.velocity[0] ** 2) + (this.velocity[1] ** 2)) < 100) { // max speed
             this.velocity = [this.velocity[0] + bx, this.velocity[1] + by];
         }
+
+    
+    }
+    calc_score() {
+        this.score = seconds;
     }
 }
 
@@ -352,6 +369,7 @@ function stat_render() {
     text("Location: " + [Math.round(player.x), Math.round(player.y)], 10, 40);
     text("Angle: " + player.angle, 10, 60);
     text("Clients: " + (Object.keys(players).length + 1), 10, 80);
+    text("Score: " + player.score, 10, 100);
     pop();
 }
 
@@ -413,6 +431,7 @@ function draw() {
             renderScreen();
             stat_render();
             player.move_velocity();
+            player.calc_score();
         }
     } else {
         push();
@@ -488,3 +507,4 @@ function mousePressed() {
         scrollY = 700;
     }
 }
+
