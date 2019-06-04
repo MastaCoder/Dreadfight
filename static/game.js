@@ -132,6 +132,12 @@ class Car {
         this.angle += angle;
     }
 
+    shoot(){
+        if (key == 'SPACE'){
+
+        }
+    }
+
     move_velocity() {
         let angle, friction;
 
@@ -331,6 +337,8 @@ function keyControl() {
 }
 
 function keyPressed() {
+    if (keyCode == 32)
+        console.log('ye')
     if (key.toLowerCase() in controls)
         controls[key.toLowerCase()] = true;
     return false;
@@ -352,7 +360,7 @@ function draw() {
             keyControl();
             render();
             keyControl();
-            render();
+            renderScreen();
             stat_render();
             player.move_velocity();
         }
