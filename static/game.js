@@ -6,7 +6,7 @@ var socket = io();
 // });
 
 /* VARIABLES */
-class main{
+class main {
     constructor(screen = 'main') {
         this.screen = screen;
     }
@@ -25,7 +25,8 @@ var controls = {
 var player,
     players = {},
     scene = [],
-    connected = false;
+    connected = false,
+    canon;
 
 class Car {
     constructor(x, y, id, type) {
@@ -126,6 +127,8 @@ class Car {
             rect(26.5, -20, 3, 20)
             rect(26.5, 30, 3, 20)
         }
+
+        fill(0);
     }
 
     rotate(angle) {
@@ -198,6 +201,12 @@ class Car {
             }
         }
 
+        for (let i in players) {
+            if (dist(player.x + (this.velocity[0] * 0.1), player.y - (this.velocity[1] * 0.1), players[i].x, players[i].y) <= 25 + 25) {
+                this.velocity = [0, 0];
+            }
+        }
+
         this.x += this.velocity[0] * 0.1;
         this.y -= this.velocity[1] * 0.1;
     }
@@ -240,6 +249,37 @@ class Scene {
     }
 }
 
+class Canon {
+    constructor() {
+        this.angle = 0;
+    }
+
+    update_pos() {
+        // this.angle += 1;
+    }
+
+    render() {
+        this.follow();
+        push();
+        translate(375, 350);
+        rotate(1.570796325);
+        rotate(this.angle);
+        strokeWeight(2);
+        stroke(0);
+        fill(81, 81, 67);
+        rect(0, 0, 35, 40);
+        rect(0, -22.5, 25, 5);
+        pop();
+    }
+
+    follow() {
+        let dir = (atan2(mouseY - (700 / 2), mouseX - (750 / 2)) - this.angle) / 6.2831853;
+        dir = (dir - round(dir)) * 6.2831853;
+        this.angle += (dir * 0.1);
+        console.log(this.angle);
+    }
+}
+
 socket.on('handshake', function(data) {
     for (let i in data[1]) {
         let obj = data[1][i];
@@ -250,8 +290,10 @@ socket.on('handshake', function(data) {
         let car = data[0][i];
         if (socket.id != i)
             players[i] = new Car(car[1][0], car[1][1], i, car[3]);
-        else
+        else {
             player = new Car(0, 0, socket.id, car[3]);
+            canon = new Canon();
+        }
     }
 
     connected = true;
@@ -279,6 +321,8 @@ function render() {
     }
 
     player.player_render();
+    canon.render();
+    canon.update_pos();
 }
 
 function calculate_vector(angle, constant) {
@@ -323,16 +367,20 @@ function keyControl() {
         player.boost(vectors[0], vectors[1]);
     }
 
-        let speed = Math.sqrt(player.velocity[0]**2 + player.velocity[1]**2)
+    
+    let speed = Math.sqrt(player.velocity[0]**2 + player.velocity[1]**2)
     let turn_angle = (-(1 / 2750)) * ((speed - 50)**2) + 1.1;
-    if (controls['a']) {
-        if (player.angle - turn_angle < 0)
-            player.angle = 360 + player.angle;
-        player.angle -= turn_angle;
-    } else if (controls['d']) {
-        if (player.angle + turn_angle > 360)
-            player.angle = player.angle + turn_angle - 360;
-        player.angle += turn_angle;
+    
+    if (player.velocity[0] != 0 || player.velocity[1] != 0) {
+        if (controls['a']) {
+            if (player.angle - turn_angle < 0)
+                player.angle = 360 + player.angle;
+            player.angle -= turn_angle;
+        } else if (controls['d']) {
+            if (player.angle + turn_angle > 360)
+                player.angle = player.angle + turn_angle - 360;
+            player.angle += turn_angle;
+        }
     }
 
     socket.emit('update', [[player.x, player.y], player.angle])
