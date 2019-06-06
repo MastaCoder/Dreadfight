@@ -32,11 +32,10 @@ players = {}; // Type, Location, Rotation, Car Type
 // Map Generation
 map = [];
 for (let i = 0; i < 50; i++) {
-    let x = Math.floor(Math.random() * 2001) - 1000,
-        y = Math.floor(Math.random() * 2001) - 1000,
+    let x = Math.floor(Math.random() * 4001) - 2000,
+        y = Math.floor(Math.random() * 4001) - 2000,
         obj = Math.floor(Math.random() * (3 - 0)) + 0;
-        size = Math.floor(Math.random() * (50 - 0)) + 0;
-    map.push([[x, y], obj, size]);
+    map.push([[x, y], obj]);
 }
 
 io.on('connection', function(socket) {

@@ -1,10 +1,5 @@
 var socket = io();
 
-// socket.on('stuff', function(data) {
-//     console.log(data);
-//     rect(data[0], data[1], 25, 25);
-// });
-
 /* VARIABLES */
 class main {
     constructor(screen = 'main') {
@@ -24,8 +19,6 @@ var controls = {
 
 var seconds = 0;
 var el = document.getElementById('seconds-counter');
-
-
 
 function incrementSeconds() {
     seconds += 1;
@@ -48,6 +41,7 @@ class Car {
         this.type = type;
         this.id = id;
         this.score = 0;
+        this.driving = false;
     }
 
     move(up) {
@@ -140,6 +134,13 @@ class Car {
             rect(26.5, 30, 3, 20)
         }
 
+        if (this.driving) {
+            fill(255, 0, 0);
+            triangle(24, 55, 8, 55, 16, 68);
+            fill(255, 255, 0);
+            triangle(20, 55, 12, 55, 16, 63);
+        }
+
         fill(0);
     }
 
@@ -156,12 +157,14 @@ class Car {
     move_velocity() {
         let angle, friction;
 
-        if (this.velocity[0] != 0 && this.velocity[1] != 0) {
-            angle = degrees(Math.atan(Math.abs(this.velocity[0]) / Math.abs(this.velocity[1]))); // get the angle of the velocity
-        } else {
-            angle = 0; // treat as 0
-        }
+        let t_x = player.x + (this.velocity[0] * 0.1),
+            t_y = player.y - (this.velocity[1] * 0.1);
+        if (t_x < -1975 || t_x > 1975 || t_y < -1975 || t_x > 1975)
+            this.velocity = [0, 0];
+        else if (this.velocity == [0, 0])
+            return false;
 
+        angle = degrees(Math.atan(Math.abs(this.velocity[0]) / Math.abs(this.velocity[1]))); // get the angle of the velocity
         friction = 1.5; // friction vector
 
         // TR 1
@@ -219,6 +222,15 @@ class Car {
             }
         }
 
+        for (let i in scene) {
+            let radius = 25;
+            if (scene[i].type == 1)
+                radius = 50;
+            if (dist(player.x + (this.velocity[0] * 0.1), player.y - (this.velocity[1] * 0.1), scene[i].x, scene[i].y) <= 25 + radius) {
+                this.velocity = [0, 0];
+            }
+        }
+
         this.x += this.velocity[0] * 0.1;
         this.y -= this.velocity[1] * 0.1;
     }
@@ -227,20 +239,18 @@ class Car {
         if (Math.sqrt((this.velocity[0] ** 2) + (this.velocity[1] ** 2)) < 100) { // max speed
             this.velocity = [this.velocity[0] + bx, this.velocity[1] + by];
         }
-
-    
     }
+
     calc_score() {
         this.score = seconds;
     }
 }
 
 class Scene {
-    constructor(x, y, type, size) {
-        this.type = 0;
+    constructor(x, y, type) {
+        this.type = type;
         this.x = x;
         this.y = y;
-        this.size = size;
     }
 
     render(off_x, off_y) {
@@ -261,7 +271,18 @@ class Scene {
             fill(191, 201, 191);
             ellipse(12.5, -5, 15, 15);
         } else if (this.type == 1) {
-            
+            noStroke()
+            fill(24, 73, 24);
+            ellipse(0, 0, 100, 100);
+            fill(22, 117, 22);
+            ellipse(0, 0, 62.5, 62.5);
+            strokeWeight(1);
+            stroke(0);
+            fill(86, 47, 11);
+            ellipse(0, 0, 25, 25);
+        } else if (this.type == 2) {
+            fill(0);
+            ellipse(0, 0, 100, 100);
         }
     }
 }
@@ -293,14 +314,13 @@ class Canon {
         let dir = (atan2(mouseY - (700 / 2), mouseX - (750 / 2)) - this.angle) / 6.2831853;
         dir = (dir - round(dir)) * 6.2831853;
         this.angle += (dir * 0.1);
-        console.log(this.angle);
     }
 }
 
 socket.on('handshake', function(data) {
     for (let i in data[1]) {
         let obj = data[1][i];
-        scene.push(new Scene(obj[0][0], obj[0][1], 0, 100));
+        scene.push(new Scene(obj[0][0], obj[0][1], obj[1]));
     }
 
     for (let i in data[0]) {
@@ -329,6 +349,12 @@ socket.on('catchup', function(data) {
 });
 
 function render() {
+    push();
+    fill(126, 200, 80);
+    translate(375 - player.x, 350 - player.y);
+    rect(0, 0, 4000, 4000);
+    pop();
+
     for (let i = 0; i < scene.length; i++) {
         scene[i].render(player.x, player.y);
     }
@@ -374,9 +400,12 @@ function stat_render() {
 }
 
 function keyControl() {
+    player.driving = false;
+    
     if (controls['w']) {
         let vectors = calculate_vector(player.angle, 1.3); // check for vectors
         player.boost(vectors[0], vectors[1]);
+        player.driving = true;
     } else if (controls['s']) {
         let drop_angle = player.angle - 180;
         if (player.angle - 180 < 0) 
@@ -385,7 +414,6 @@ function keyControl() {
         player.boost(vectors[0], vectors[1]);
     }
 
-    
     let speed = Math.sqrt(player.velocity[0]**2 + player.velocity[1]**2)
     let turn_angle = (-(1 / 2750)) * ((speed - 50)**2) + 1.1;
     
@@ -420,7 +448,7 @@ function keyReleased() {
 }
 
 function draw() {
-    background(126, 200, 80);
+    background(0, 0, 255);
     textSize(32);
     if (connected) {
         renderScreen(375, 200);
