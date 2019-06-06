@@ -7,6 +7,53 @@ class main {
     }
 }
 
+class projectile{
+    constructor(x, y, angle, currentLife){
+        this.x = x
+        this.y = y
+        this.angle = angle
+        this.currentLife = currentLife
+        this.life = true
+    }
+
+    checkLife(){
+        this.currentTime = new Date().getTime()
+        //console.log(this.currentTime - this.currentLife)
+        if (this.currentTime - this.currentLife >= 1000){
+            this.life = false
+        }
+    }
+
+    draw(){
+        push();
+        translate(this.x + 375,this.y + 350);
+        rotate(1.570796325);
+        rotate(this.angle);
+
+        strokeWeight(1);
+        fill(255);
+        rect(0, 0, 10, 15);
+    
+        fill(255, 0, 0);
+        triangle(0, -25, -10, -5, 10, -5);
+    
+        noStroke();
+        triangle(0, 15, -5, 10, 5, 10);
+        pop()
+    }
+    move(){
+        this.x += 5*cos(this.angle)
+        this.y += 5*sin(this.angle)
+    }
+    render(){
+        this.checkLife()
+        if (this.life == true){
+            this.move()
+            this.draw()
+        }
+    }
+}
+
 main = new main();
 scrolly = 700;
 
@@ -149,9 +196,8 @@ class Car {
     }
 
     shoot(){
-        if (key == 'SPACE'){
-
-        }
+        var currentLife = new Date().getTime()
+        this.projectiles.push(new projectile(0 , 0, canon.angle, currentLife))
     }
 
     move_velocity() {
@@ -434,7 +480,7 @@ function keyControl() {
 
 function keyPressed() {
     if (keyCode == 32)
-        console.log('ye')
+        player.shoot()
     if (key.toLowerCase() in controls)
         controls[key.toLowerCase()] = true;
     return false;
@@ -453,6 +499,7 @@ function draw() {
     if (connected) {
         renderScreen(375, 200);
         if (main.screen == 'play') {
+            //console.log(player.projectiles)
             keyControl();
             render();
             keyControl();
@@ -460,6 +507,14 @@ function draw() {
             stat_render();
             player.move_velocity();
             player.calc_score();
+            //player.shoot()
+            for (i = 0; i < player.projectiles.length; i++){
+                player.projectiles[i].render()
+                if (player.projectiles[i].life == false){
+                    player.projectiles.splice(i, 1)
+                //console.log(player.projectiles.length)
+                }
+            }
         }
     } else {
         push();
