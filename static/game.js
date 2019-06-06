@@ -521,6 +521,8 @@ function draw() {
                 let radius = 25;
                 if (scene[i].type == 1)
                     radius = 50;
+                if (scene[i].type == 2)
+                    radius = 75;
                 for (n = 0; n < player.projectiles.length; n++){
                     if (dist(player.projectiles[n].x + player.x, player.projectiles[n].y + player.y, scene[i].x, scene[i].y) <= 25 + radius) {
                         player.projectiles.splice(n, 1)
