@@ -19,7 +19,7 @@ class projectile{
     checkLife(){
         this.currentTime = new Date().getTime()
         //console.log(this.currentTime - this.currentLife)
-        if (this.currentTime - this.currentLife >= 1000){
+        if (this.currentTime - this.currentLife >= 3000){
             this.life = false
         }
     }
@@ -39,6 +39,9 @@ class projectile{
     
         noStroke();
         triangle(0, 15, -5, 10, 5, 10);
+
+        //fill(0)
+        //ellipse(0,0, 32, 32)
         pop()
     }
     move(){
@@ -494,12 +497,14 @@ function keyReleased() {
 }
 
 function draw() {
-    background(0, 0, 255);
     textSize(32);
+    if (main.screen != 'play')
+        background(126, 200, 80)
     if (connected) {
         renderScreen(375, 200);
         if (main.screen == 'play') {
             //console.log(player.projectiles)
+            background(0, 0, 255)
             keyControl();
             render();
             keyControl();
@@ -508,12 +513,21 @@ function draw() {
             player.move_velocity();
             player.calc_score();
             //player.shoot()
+            for (let i in scene) {
+                let radius = 25;
+                if (scene[i].type == 1)
+                    radius = 50;
+                for (n = 0; n < player.projectiles.length; n++){
+                    if (dist(player.projectiles[n].x + player.x, player.projectiles[n].y + player.y, scene[i].x, scene[i].y) <= 25 + radius) {
+                        player.projectiles.splice(n, 1)
+                }
+                }
+            }
+            
             for (i = 0; i < player.projectiles.length; i++){
                 player.projectiles[i].render()
-                if (player.projectiles[i].life == false){
+                if (player.projectiles[i].life == false)
                     player.projectiles.splice(i, 1)
-                //console.log(player.projectiles.length)
-                }
             }
         }
     } else {
@@ -544,6 +558,7 @@ function setup() {
  */
 function renderScreen(x, y) { 
     if (main.screen == 'main') {
+        background(126, 200, 80)
         text('Welcome To Dread Fight', x, y - 100);
         rect(x, y, 200, 50);
         rect(x, y + 100, 200, 50);
