@@ -332,9 +332,30 @@ class Scene {
             fill(86, 47, 11);
             ellipse(0, 0, 25, 25);
         } else if (this.type == 2) {
+
+            /*
+            diameter of the hut is 125
+            */
             fill(86, 60, 33);
             ellipse(0, 0, 125, 125);
+
             fill(150, 104, 40);
+            noStroke();
+
+            rect(0, 0, 50, 150);
+
+            rotate(radians(45));
+            rect(0, 0, 50, 150);
+
+            rotate(radians(90));
+            rect(0, 0, 50, 150);
+
+            rotate(radians(-45));
+            rect(0, 0, 50, 150);
+
+            fill(86, 60, 33);
+            stroke(0);
+            strokeWeight(1);
             ellipse(0, 0, 50, 50);
         }
     }
