@@ -69,6 +69,7 @@ var controls = {
 
 var seconds = 0;
 var el = document.getElementById('seconds-counter');
+var drift = [];
 
 function incrementSeconds() {
     seconds += 1;
@@ -210,13 +211,15 @@ class Car {
 
         let t_x = player.x + (this.velocity[0] * 0.1),
             t_y = player.y - (this.velocity[1] * 0.1);
-        if (t_x < -1975 || t_x > 1975 || t_y < -1975 || t_x > 1975)
+        if (t_x < -1975 || t_x > 1975 || t_y < -1975 || t_y > 1975)
             this.velocity = [0, 0];
         else if (this.velocity == [0, 0])
             return false;
 
         angle = degrees(Math.atan(Math.abs(this.velocity[0]) / Math.abs(this.velocity[1]))); // get the angle of the velocity
         friction = 1.5; // friction vector
+
+        console.log([this.angle, angle]);
 
         // TR 1
         if (this.velocity[0] > 0 && this.velocity[1] > 0) {
@@ -226,6 +229,7 @@ class Car {
                 this.velocity[0] = 0;
                 this.velocity[1] = 0;
             }
+            quad = angle;
         // BR 2
         } else if (this.velocity[0] > 0 && this.velocity[1] < 0) {
             this.velocity[0] -= Math.sin(radians(angle)) * friction;
@@ -234,6 +238,8 @@ class Car {
                 this.velocity[0] = 0;
                 this.velocity[1] = 0;
             }
+            quad = (90 - angle) + 90;
+            console.log(quad);
         // BL 3
         } else if (this.velocity[0] < 0 && this.velocity[1] < 0) {
             this.velocity[0] += Math.sin(radians(angle)) * friction;
@@ -242,6 +248,7 @@ class Car {
                 this.velocity[0] = 0;
                 this.velocity[1] = 0;
             }
+            quad = 180 + angle;
         // TL 4
         } else if (this.velocity[0] < 0 && this.velocity[1] > 0) {
             this.velocity[0] += Math.sin(radians(angle)) * friction;
@@ -250,6 +257,7 @@ class Car {
                 this.velocity[0] = 0;
                 this.velocity[1] = 0;
             }
+            quad = (90 - angle) + 270;
         // Y Only?
         } else if (this.velocity[0] == 0 && this.velocity[1] != 0) {
             if (this.velocity[1] > 0) {
@@ -429,6 +437,16 @@ function render() {
     rect(0, 0, 4000, 4000);
     pop();
 
+    removed = 0;
+    fill(0);
+    for (let i = 0; i < drift.length; i++) {
+        if (drift[i][0] > 200) {
+            delete drift[i];
+            removed++;
+        } drift[i][0]++;
+        ellipse(drift[1][0] + 375 - player.x, drift[1][1] + 350 - player.y, 10, 10);
+    }
+
     for (let i = 0; i < scene.length; i++) {
         scene[i].render(player.x, player.y);
     }
@@ -513,6 +531,7 @@ function keyPressed() {
         controls[key.toLowerCase()] = true;
     return false;
 }
+
 
 function keyReleased() {
     if (key.toLowerCase() in controls)
@@ -630,6 +649,7 @@ function mousePressed() {
     else if ((mouseX >= 550 && mouseX <= 750) && (main.screen == 'howToPlay' || main.screen == 'credits') && (mouseY >= 650 && mouseY <= 700)) {
         main.screen = 'main';
         scrollY = 700;
-    }
+    } else if (main.screen == 'play')
+        player.shoot();
 }
 
