@@ -7,56 +7,6 @@ class main {
     }
 }
 
-class projectile{
-    constructor(x, y, angle, currentLife){
-        this.x = x
-        this.y = y
-        this.angle = angle
-        this.currentLife = currentLife
-        this.life = true
-    }
-
-    checkLife(){
-        this.currentTime = new Date().getTime()
-        //console.log(this.currentTime - this.currentLife)
-        if (this.currentTime - this.currentLife >= 3000){
-            this.life = false
-        }
-    }
-
-    draw(){
-        push();
-        translate(this.x + 375,this.y + 350);
-        rotate(1.570796325);
-        rotate(this.angle);
-
-        strokeWeight(1);
-        fill(255);
-        rect(0, 0, 10, 15);
-    
-        fill(255, 0, 0);
-        triangle(0, -25, -10, -5, 10, -5);
-    
-        noStroke();
-        triangle(0, 15, -5, 10, 5, 10);
-
-        //fill(0)
-        //ellipse(0,0, 32, 32)
-        pop()
-    }
-    move(){
-        this.x += 5*cos(this.angle)
-        this.y += 5*sin(this.angle)
-    }
-    render(){
-        this.checkLife()
-        if (this.life == true){
-            this.move()
-            this.draw()
-        }
-    }
-}
-
 main = new main();
 scrolly = 700;
 
@@ -81,7 +31,8 @@ var player,
     players = {},
     scene = [],
     connected = false,
-    canon;
+    canon,
+    shots = [];
 
 class Car {
     constructor(x, y, id, type) {
@@ -201,11 +152,6 @@ class Car {
         this.angle += angle;
     }
 
-    shoot(){
-        var currentLife = new Date().getTime()
-        this.projectiles.push(new projectile(0 , 0, canon.angle, currentLife))
-    }
-
     move_velocity() {
         let angle, friction;
 
@@ -218,8 +164,6 @@ class Car {
 
         angle = degrees(Math.atan(Math.abs(this.velocity[0]) / Math.abs(this.velocity[1]))); // get the angle of the velocity
         friction = 1.5; // friction vector
-
-        console.log([this.angle, angle]);
 
         // TR 1
         if (this.velocity[0] > 0 && this.velocity[1] > 0) {
@@ -239,7 +183,6 @@ class Car {
                 this.velocity[1] = 0;
             }
             quad = (90 - angle) + 90;
-            console.log(quad);
         // BL 3
         } else if (this.velocity[0] < 0 && this.velocity[1] < 0) {
             this.velocity[0] += Math.sin(radians(angle)) * friction;
@@ -399,6 +342,55 @@ class Canon {
     }
 }
 
+class Projectile {
+    constructor(x, y, angle, currentLife) {
+        this.x = x;
+        this.y = y;
+        this.angle = angle;
+        this.currentLife = currentLife;
+        this.life = true;
+    }
+
+    checkLife() {
+        this.currentTime = new Date().getTime();
+        if (this.currentTime - this.currentLife >= 3000) {
+            this.life = false;
+        }
+    }
+
+    draw(off_x, off_y) {
+        push();
+        translate(this.x + 375 - off_x, this.y + 350 - off_y);
+        rotate(1.570796325);
+        rotate(this.angle);
+
+        strokeWeight(1);
+        fill(255);
+        rect(0, 0, 10, 15);
+    
+        fill(255, 0, 0);
+        triangle(0, -25, -10, -5, 10, -5);
+    
+        noStroke();
+        triangle(0, 15, -5, 10, 5, 10);
+
+        pop();
+    }
+
+    move() {
+        this.x += 5 * cos(this.angle);
+        this.y += 5 * sin(this.angle);
+    }
+
+    render(off_x, off_y) {
+        this.checkLife();
+        if (this.life == true) {
+            this.move();
+            this.draw(off_x, off_y);
+        }
+    }
+}
+
 socket.on('handshake', function(data) {
     for (let i in data[1]) {
         let obj = data[1][i];
@@ -425,9 +417,8 @@ socket.on('catchup', function(data) {
         players[data[1]].x = data[2][0];
         players[data[1]].y = data[2][1];
         players[data[1]].angle = data[3];
-    } else if (data[0] == "disconnect") {
+    } else if (data[0] == "disconnect")
         delete players[data[1]];
-    }
 });
 
 function render() {
@@ -524,9 +515,15 @@ function keyControl() {
     socket.emit('update', [[player.x, player.y], player.angle])
 }
 
+function shoot() {
+    shots.push(new Projectile(player.x, player.y, canon.angle, new Date().getTime()));
+}
+
 function keyPressed() {
-    if (keyCode == 32)
-        player.shoot()
+    if (keyCode == 32) {
+        shoot();
+    }
+    
     if (key.toLowerCase() in controls)
         controls[key.toLowerCase()] = true;
     return false;
@@ -547,7 +544,6 @@ function draw() {
     if (connected) {
         renderScreen(375, 200);
         if (main.screen == 'play') {
-            //console.log(player.projectiles)
             background(0, 0, 255)
             keyControl();
             render();
@@ -556,24 +552,22 @@ function draw() {
             stat_render();
             player.move_velocity();
             player.calc_score();
-            //player.shoot()
             for (let i in scene) {
                 let radius = 25;
                 if (scene[i].type == 1)
                     radius = 50;
                 if (scene[i].type == 2)
                     radius = 75;
-                for (n = 0; n < player.projectiles.length; n++){
-                    if (dist(player.projectiles[n].x + player.x, player.projectiles[n].y + player.y, scene[i].x, scene[i].y) <= 25 + radius) {
-                        player.projectiles.splice(n, 1)
-                }
+                for (n = 0; n < shots.length; n++) {
+                    if (dist(shots[n].x + player.x, shots[n].y + player.y, scene[i].x, scene[i].y) <= 25 + radius)
+                        shots.splice(n, 1);
                 }
             }
             
-            for (i = 0; i < player.projectiles.length; i++){
-                player.projectiles[i].render()
-                if (player.projectiles[i].life == false)
-                    player.projectiles.splice(i, 1)
+            for (i = 0; i < shots.length; i++) {
+                shots[i].render(player.x, player.y);
+                if (shots[i].life == false)
+                    shots.splice(i, 1);
             }
         }
     } else {
@@ -650,6 +644,6 @@ function mousePressed() {
         main.screen = 'main';
         scrollY = 700;
     } else if (main.screen == 'play')
-        player.shoot();
+        shoot();
 }
 
