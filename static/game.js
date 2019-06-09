@@ -1,5 +1,6 @@
 var socket = io();
 var song;
+var firing;
 
 /* VARIABLES */
 class main {
@@ -229,6 +230,8 @@ class Car {
             let radius = 25;
             if (scene[i].type == 1)
                 radius = 50;
+            if (scene[i].type == 2)
+                radius = 62.5;
             if (dist(player.x + (this.velocity[0] * 0.1), player.y - (this.velocity[1] * 0.1), scene[i].x, scene[i].y) <= 25 + radius) {
                 this.velocity = [0, 0];
             }
@@ -284,12 +287,6 @@ class Scene {
             fill(86, 47, 11);
             ellipse(0, 0, 25, 25);
         } else if (this.type == 2) {
-
-            /*
-            diameter of the hut is 125
-            */
-            fill(86, 60, 33);
-            ellipse(0, 0, 125, 125);
 
             fill(150, 104, 40);
             noStroke();
@@ -517,6 +514,8 @@ function keyControl() {
 }
 
 function shoot() {
+    firing.setVolume(0.1);
+    firing.play();
     shots.push(new Projectile(player.x, player.y, canon.angle, new Date().getTime()));
 }
 
@@ -540,7 +539,6 @@ function keyReleased() {
 
 function draw() {
     textSize(32);
-    song.setVolume(0.1);
     if (main.screen != 'play')
         background(126, 200, 80)
     if (connected) {
@@ -590,12 +588,13 @@ function style() {
 
 function preload(){
     song = loadSound('song.mp3');
-    
+    firing = loadSound('firing.mp3')
 }
 
 function setup() {
     style()
     createCanvas(750, 700);
+    song.setVolume(0.1);
     song.play();
     song.loop();
 }
@@ -652,7 +651,9 @@ function mousePressed() {
     else if ((mouseX >= 550 && mouseX <= 750) && (main.screen == 'howToPlay' || main.screen == 'credits') && (mouseY >= 650 && mouseY <= 700)) {
         main.screen = 'main';
         scrollY = 700;
-    } else if (main.screen == 'play')
+    } 
+    else if (main.screen == 'play')
         shoot();
+    
 }
 
