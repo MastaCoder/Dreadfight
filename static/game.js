@@ -1,4 +1,5 @@
 var socket = io();
+var song;
 
 /* VARIABLES */
 class main {
@@ -330,8 +331,8 @@ class Canon {
         strokeWeight(2);
         stroke(0);
         fill(81, 81, 67);
-        rect(0, 0, 35, 40);
-        rect(0, -22.5, 25, 5);
+        rect(0, 0, 25, 30);
+        rect(0, -17.5, 15, 5);
         pop();
     }
 
@@ -539,6 +540,7 @@ function keyReleased() {
 
 function draw() {
     textSize(32);
+    song.setVolume(0.1);
     if (main.screen != 'play')
         background(126, 200, 80)
     if (connected) {
@@ -586,9 +588,16 @@ function style() {
     textAlign(CENTER, CENTER)
 }
 
+function preload(){
+    song = loadSound('song.mp3');
+    
+}
+
 function setup() {
     style()
     createCanvas(750, 700);
+    song.play();
+    song.loop();
 }
 
 /**
