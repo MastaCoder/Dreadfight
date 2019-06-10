@@ -1,6 +1,5 @@
-var socket = io();
-var song;
-var firing;
+var socket = io(),
+    song, firing, deja;
 
 /* VARIABLES */
 class main {
@@ -34,7 +33,8 @@ var player,
     scene = [],
     connected = false,
     canon,
-    shots = [];
+    shots = [],
+    current_drift = false;
 
 class Car {
     constructor(x, y, id, type) {
@@ -46,6 +46,7 @@ class Car {
         this.id = id;
         this.score = 0;
         this.driving = false;
+        this.reverse = false;
     }
 
     move(up) {
@@ -155,7 +156,8 @@ class Car {
     }
 
     move_velocity() {
-        let angle, friction;
+        let angle, friction,
+            quad = 0;
 
         let t_x = player.x + (this.velocity[0] * 0.1),
             t_y = player.y - (this.velocity[1] * 0.1);
@@ -218,6 +220,19 @@ class Car {
             } else {
                 this.velocity[0] += 1;
             }
+        }
+
+        if (quad > 0 && Math.abs(quad - this.angle) > 25) {
+            if (!current_drift && !this.reverse) {
+                deja.setVolume(0.1);
+                deja.play();
+                current_drift = true;
+                console.log("drifting");
+            }
+        } else {
+            if (current_drift)
+                deja.stop();
+            current_drift = false;
         }
 
         for (let i in players) {
@@ -487,12 +502,14 @@ function keyControl() {
         let vectors = calculate_vector(player.angle, 1.3); // check for vectors
         player.boost(vectors[0], vectors[1]);
         player.driving = true;
+        player.reverse = false;
     } else if (controls['s']) {
         let drop_angle = player.angle - 180;
         if (player.angle - 180 < 0) 
             drop_angle = 180 + player.angle;
         let vectors = calculate_vector(drop_angle, 1.0); // check for vectors
         player.boost(vectors[0], vectors[1]);
+        player.reverse = true;
     }
 
     let speed = Math.sqrt(player.velocity[0]**2 + player.velocity[1]**2)
@@ -586,16 +603,20 @@ function style() {
     textAlign(CENTER, CENTER)
 }
 
-function preload(){
+function preload() {
     song = loadSound('song.mp3');
-    firing = loadSound('firing.mp3')
+    firing = loadSound('firing.mp3');
+    deja = loadSound('drift.mp3');
 }
 
 function setup() {
     style()
     createCanvas(750, 700);
+<<<<<<< HEAD
     song.setVolume(0.05);
     song.loop();
+=======
+>>>>>>> b62d4a492abbcac69dd7de0b152d15079bd85995
 }
 
 /**
