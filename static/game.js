@@ -1,6 +1,5 @@
-var socket = io();
-var song;
-var firing;
+var socket = io(),
+    song, firing, deja;
 
 /* ClASSES */
 class main {
@@ -19,6 +18,7 @@ class Car {
         this.id = id;
         this.score = 0;
         this.driving = false;
+        this.reverse = false;
     }
 
     move(up) {
@@ -60,6 +60,7 @@ class Car {
             rect(-26.5, 30, 3, 20);
             rect(26.5, -20, 3, 20);
             rect(26.5, 30, 3, 20);
+
         } else if (this.type == 1) {
             strokeWeight(2);
             stroke(0);
@@ -80,30 +81,26 @@ class Car {
             rect(-26.5, 30, 3, 20);
             rect(26.5, -20, 3, 20);
             rect(26.5, 30, 3, 20);
+
         } else if (this.type == 2) {
             strokeWeight(1)
             fill(255);
             rect(0, 0, 50, 100);
-            
             noStroke();
             fill(255, 0, 0);
             rect(20, 0, 10, 100);
             rect(-20, 0, 10, 100);
             rect(0, 45, 30, 10);
-
             fill(0)
             rect(0, 0, 10, 100);
             rect(12.5, -45, 5, 10);
             rect(-12.5, -45, 5, 10);
-
             fill(0, 0, 255);
             rect(-7.5, -45, 5, 10);
             rect(7.5, -45, 5, 10);
-
             fill(244, 241, 66);
             rect(20, 45, 10, 10);
             rect(-20, 45, 10, 10);
-
             fill(0)
             rect(-26.5, -20, 3, 20)
             rect(-26.5, 30, 3, 20)
@@ -128,7 +125,8 @@ class Car {
     }
 
     move_velocity() {
-        let angle, friction;
+        let angle, friction,
+            quad = 0;
 
         let t_x = player.x + (this.velocity[0] * 0.1),
             t_y = player.y - (this.velocity[1] * 0.1);
@@ -191,6 +189,22 @@ class Car {
             } else {
                 this.velocity[0] += 1;
             }
+        }
+
+        if (quad > 0 && Math.abs(quad - this.angle) > 25) {
+            if (!this.reverse) {
+                drift.push([0, [this.x, this.y]]);
+            }
+            if (!current_drift && !this.reverse) {
+                deja.setVolume(0.1);
+                deja.play();
+                current_drift = true;
+                console.log("drifting");
+            }
+        } else {
+            if (current_drift)
+                deja.stop();
+            current_drift = false;
         }
 
         for (let i in players) {
@@ -314,12 +328,13 @@ class Canon {
 }
 
 class Projectile {
-    constructor(x, y, angle, currentLife) {
+    constructor(x, y, angle, currentLife, owner) {
         this.x = x;
         this.y = y;
         this.angle = angle;
         this.currentLife = currentLife;
         this.life = true;
+        this.owner = owner;
     }
 
     checkLife() {
@@ -346,6 +361,10 @@ class Projectile {
     
         noStroke();
         triangle(0, 15, -5, 10, 5, 10);
+
+        fill(0);
+        textSize(30);
+        text(this.owner, 0, 0);
 
         pop();
     }
@@ -425,6 +444,9 @@ socket.on('catchup', function(data) {
         players[data[1]].angle = data[3];
     } else if (data[0] == "disconnect")
         delete players[data[1]];
+    else if (data[0] == 'shot') { // ['shot', [x, y], angle, owner]
+        shots.push(new Projectile(data[1][0], data[1][1], data[2], 200, data[3]));
+    }
 });
 
 /* FUNCTIONS */
@@ -449,11 +471,13 @@ function render() {
     removed = 0;
     fill(0);
     for (let i = 0; i < drift.length; i++) {
-        if (drift[i][0] > 200) {
-            delete drift[i];
+        if (drift[i - removed][0] > 50) {
+            drift.splice(i - removed, 1);
             removed++;
-        } drift[i][0]++;
-        ellipse(drift[1][0] + 375 - player.x, drift[1][1] + 350 - player.y, 10, 10);
+        } else {
+            drift[i - removed][0]++;
+            ellipse(drift[i - removed][1][0] + 375 - player.x, drift[i - removed][1][1] + 350 - player.y, 50, 10);
+        }
     }
 
     for (let i = 0; i < scene.length; i++) {
@@ -507,12 +531,14 @@ function keyControl() {
         let vectors = calculate_vector(player.angle, 1.3); // check for vectors
         player.boost(vectors[0], vectors[1]);
         player.driving = true;
+        player.reverse = false;
     } else if (controls['s']) {
         let drop_angle = player.angle - 180;
         if (player.angle - 180 < 0) 
             drop_angle = 180 + player.angle;
         let vectors = calculate_vector(drop_angle, 1.0); // check for vectors
         player.boost(vectors[0], vectors[1]);
+        player.reverse = true;
     }
 
     let speed = Math.sqrt(player.velocity[0]**2 + player.velocity[1]**2)
@@ -591,7 +617,18 @@ function renderScreen(x, y) {
         text('How to Play', x, y + 100);
         text('Credits', x, y + 200);
     }
+
+    if (main.screen == 'dead') {
+        background(255, 0, 0);
+        fill(200);
+        rect(x, y + 200, 200, 50);
+        fill(0);
+        text('You died!', x, y - 100);
+        text('Retry', x, y + 200);
+    }
+
     if (main.screen == 'play') {
+        song.stop();
     }
     if (main.screen == 'howToPlay') {
         var keys = [['[W]', '- Forward'], ['[A]', '- Turn Left'],['[S]', '- Backward'], ['[D]', '- Turn Right']]
@@ -624,13 +661,14 @@ function mousePressed() {
         main.screen = 'howToPlay';
     else if ((mouseX >= 280 && mouseX <= 480) && (mouseY >= 380 && mouseY <= 430) && (main.screen == 'main'))
         main.screen = 'credits';
+    else if ((mouseX >= 280 && mouseX <= 480) && (mouseY >= 380 && mouseY <= 430) && (main.screen == 'dead'))
+        window.location.reload();
     else if ((mouseX >= 550 && mouseX <= 750) && (main.screen == 'howToPlay' || main.screen == 'credits') && (mouseY >= 650 && mouseY <= 700)) {
         main.screen = 'main';
         scrollY = 700;
     } 
     else if (main.screen == 'play')
         shoot();
-    
 }
 
 /* MAIN FUNCTIONS */
