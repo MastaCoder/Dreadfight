@@ -26,9 +26,8 @@ function incrementSeconds() {
     seconds += 1;
 }
 
-var cancel = setInterval(incrementSeconds, 10000);
-
-var player,
+var cancel = setInterval(incrementSeconds, 10000),
+    player,
     players = {},
     scene = [],
     connected = false,
@@ -91,7 +90,6 @@ class Car {
             rect(26.5, 30, 3, 20);
 
         } else if (this.type == 1) {
-            song.play();
             strokeWeight(2);
             stroke(0);
             fill(255, 0, 0);
@@ -223,6 +221,9 @@ class Car {
         }
 
         if (quad > 0 && Math.abs(quad - this.angle) > 25) {
+            if (!this.reverse) {
+                drift.push([0, [this.x, this.y]]);
+            }
             if (!current_drift && !this.reverse) {
                 deja.setVolume(0.1);
                 deja.play();
@@ -356,12 +357,13 @@ class Canon {
 }
 
 class Projectile {
-    constructor(x, y, angle, currentLife) {
+    constructor(x, y, angle, currentLife, owner) {
         this.x = x;
         this.y = y;
         this.angle = angle;
         this.currentLife = currentLife;
         this.life = true;
+        this.owner = owner;
     }
 
     checkLife() {
@@ -386,6 +388,10 @@ class Projectile {
     
         noStroke();
         triangle(0, 15, -5, 10, 5, 10);
+
+        fill(0);
+        textSize(30);
+        text(this.owner, 0, 0);
 
         pop();
     }
@@ -432,6 +438,9 @@ socket.on('catchup', function(data) {
         players[data[1]].angle = data[3];
     } else if (data[0] == "disconnect")
         delete players[data[1]];
+    else if (data[0] == 'shot') { // ['shot', [x, y], angle, owner]
+        shots.push(new Projectile(data[1][0], data[1][1], data[2], 200, data[3]));
+    }
 });
 
 function render() {
@@ -444,11 +453,13 @@ function render() {
     removed = 0;
     fill(0);
     for (let i = 0; i < drift.length; i++) {
-        if (drift[i][0] > 200) {
-            delete drift[i];
+        if (drift[i - removed][0] > 50) {
+            drift.splice(i - removed, 1);
             removed++;
-        } drift[i][0]++;
-        ellipse(drift[1][0] + 375 - player.x, drift[1][1] + 350 - player.y, 10, 10);
+        } else {
+            drift[i - removed][0]++;
+            ellipse(drift[i - removed][1][0] + 375 - player.x, drift[i - removed][1][1] + 350 - player.y, 50, 10);
+        }
     }
 
     for (let i = 0; i < scene.length; i++) {
@@ -533,7 +544,7 @@ function keyControl() {
 function shoot() {
     firing.setVolume(0.1);
     firing.play();
-    shots.push(new Projectile(player.x, player.y, canon.angle, new Date().getTime()));
+    shots.push(new Projectile(player.x, player.y, canon.angle, new Date().getTime(), player.id));
 }
 
 function keyPressed() {
@@ -552,6 +563,11 @@ function keyReleased() {
         controls[key.toLowerCase()] = false;
 
     return false;
+}
+
+function dead(killer) {
+    main.screen = "dead";
+    socket.emit('killed', [socket.id, killer]) // dead, killer
 }
 
 function draw() {
@@ -576,7 +592,7 @@ function draw() {
                 if (scene[i].type == 2)
                     radius = 75;
                 for (n = 0; n < shots.length; n++) {
-                    if (dist(shots[n].x + player.x, shots[n].y + player.y, scene[i].x, scene[i].y) <= 25 + radius)
+                    if (dist(shots[n].x, shots[n].y, scene[i].x, scene[i].y) <= 25 + radius)
                         shots.splice(n, 1);
                 }
             }
@@ -632,6 +648,16 @@ function renderScreen(x, y) {
         text('How to Play', x, y + 100);
         text('Credits', x, y + 200);
     }
+
+    if (main.screen == 'dead') {
+        background(255, 0, 0);
+        fill(200);
+        rect(x, y + 200, 200, 50);
+        fill(0);
+        text('You died!', x, y - 100);
+        text('Retry', x, y + 200);
+    }
+
     if (main.screen == 'play') {
     }
     if (main.screen == 'howToPlay') {
@@ -665,6 +691,8 @@ function mousePressed() {
         main.screen = 'howToPlay';
     else if ((mouseX >= 280 && mouseX <= 480) && (mouseY >= 380 && mouseY <= 430) && (main.screen == 'main'))
         main.screen = 'credits';
+    else if ((mouseX >= 280 && mouseX <= 480) && (mouseY >= 380 && mouseY <= 430) && (main.screen == 'dead'))
+        window.location.reload();
     else if ((mouseX >= 550 && mouseX <= 750) && (main.screen == 'howToPlay' || main.screen == 'credits') && (mouseY >= 650 && mouseY <= 700)) {
         main.screen = 'main';
         scrollY = 700;
