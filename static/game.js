@@ -70,7 +70,6 @@ class Car {
 
     draw() {
         if (this.type == 0) {
-            song.stop();
             noStroke();
             fill(0);
             rect(0, 0, 50, 100);
@@ -111,7 +110,6 @@ class Car {
             rect(26.5, 30, 3, 20);
 
         } else if (this.type == 2) {
-            song.stop();
             strokeWeight(1)
             fill(255);
             rect(0, 0, 50, 100);
@@ -629,6 +627,7 @@ function setup() {
     style()
     createCanvas(750, 700);
     song.setVolume(0.05);
+    song.play();
     song.loop();
 }
 
@@ -659,6 +658,7 @@ function renderScreen(x, y) {
     }
 
     if (main.screen == 'play') {
+        song.stop();
     }
     if (main.screen == 'howToPlay') {
         var keys = [['[W]', '- Forward'], ['[A]', '- Turn Left'],['[S]', '- Backward'], ['[D]', '- Turn Right']]
