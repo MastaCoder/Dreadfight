@@ -2,39 +2,12 @@ var socket = io();
 var song;
 var firing;
 
-/* VARIABLES */
+/* ClASSES */
 class main {
     constructor(screen = 'main') {
         this.screen = screen;
     }
 }
-
-main = new main();
-scrolly = 700;
-
-var controls = {
-    'w': false,
-    'a': false,
-    's': false,
-    'd': false
-};
-
-var seconds = 0;
-var el = document.getElementById('seconds-counter');
-var drift = [];
-
-function incrementSeconds() {
-    seconds += 1;
-}
-
-var cancel = setInterval(incrementSeconds, 10000);
-
-var player,
-    players = {},
-    scene = [],
-    connected = false,
-    canon,
-    shots = [];
 
 class Car {
     constructor(x, y, id, type) {
@@ -357,6 +330,8 @@ class Projectile {
     }
 
     draw(off_x, off_y) {
+        console.log(this.x + 375 - off_x, this.y + 350)
+        console.log(this.x + 375 - off_x, this.y + 350 - off_y)
         push();
         translate(this.x + 375 - off_x, this.y + 350 - off_y);
         rotate(1.570796325);
@@ -389,6 +364,39 @@ class Projectile {
     }
 }
 
+/* FUNCTIONS */
+function incrementSeconds() {
+    seconds += 1;
+}
+
+/* VARIABLES */
+main = new main();
+
+scrolly = 700; // initial y position of scrolling text in credits screen
+
+/** object to store what keys player is holding down */
+var controls = {
+    'w': false,
+    'a': false,
+    's': false,
+    'd': false
+};
+
+var seconds = 0;
+
+var el = document.getElementById('seconds-counter');
+
+var drift = [];
+
+var cancel = setInterval(incrementSeconds, 10000);
+
+var player,
+    players = {},
+    scene = [],
+    connected = false,
+    canon,
+    shots = [];
+
 socket.on('handshake', function(data) {
     for (let i in data[1]) {
         let obj = data[1][i];
@@ -418,6 +426,18 @@ socket.on('catchup', function(data) {
     } else if (data[0] == "disconnect")
         delete players[data[1]];
 });
+
+/* FUNCTIONS */
+/** Function to change preferred settings applied throughout the project */
+function style() {
+    rectMode(CENTER);
+    textAlign(CENTER, CENTER)
+}
+
+function preload(){
+    song = loadSound('song.mp3');
+    firing = loadSound('firing.mp3')
+}
 
 function render() {
     push();
@@ -517,86 +537,42 @@ function shoot() {
     firing.setVolume(0.1);
     firing.play();
     shots.push(new Projectile(player.x, player.y, canon.angle, new Date().getTime()));
+    //console.log(player.x, player.x)
 }
 
-function keyPressed() {
-    if (keyCode == 32) {
-        shoot();
-    }
-    
-    if (key.toLowerCase() in controls)
-        controls[key.toLowerCase()] = true;
-    return false;
-}
-
-
-function keyReleased() {
-    if (key.toLowerCase() in controls)
-        controls[key.toLowerCase()] = false;
-
-    return false;
-}
-
-function draw() {
-    textSize(32);
-    if (main.screen != 'play')
-        background(126, 200, 80)
-    if (connected) {
-        renderScreen(375, 200);
-        if (main.screen == 'play') {
-            background(0, 0, 255)
-            keyControl();
-            render();
-            keyControl();
-            renderScreen();
-            stat_render();
-            player.move_velocity();
-            player.calc_score();
-            for (let i in scene) {
-                let radius = 25;
-                if (scene[i].type == 1)
-                    radius = 50;
-                if (scene[i].type == 2)
-                    radius = 75;
-                for (n = 0; n < shots.length; n++) {
-                    if (dist(shots[n].x + player.x, shots[n].y + player.y, scene[i].x, scene[i].y) <= 25 + radius)
-                        shots.splice(n, 1);
-                }
-            }
-            
-            for (i = 0; i < shots.length; i++) {
-                shots[i].render(player.x, player.y);
-                if (shots[i].life == false)
-                    shots.splice(i, 1);
+/** Checks if projectiles fired from the player collides with environment */
+function checkSceneCollision(){
+    for (let i in scene) {
+        let radius = 25;
+        if (scene[i].type == 1)
+            radius = 50;
+        if (scene[i].type == 2)
+            radius = 75;
+        for (n = 0; n < shots.length; n++){
+            if (dist(shots[n].x + player.x, shots[n].y + player.y, scene[i].x, scene[i].y) <= 25 + radius) {
+                shots.splice(n, 1);
+                scene[i].health -= 1;
+                //console.log('yest')
             }
         }
-    } else {
-        push();
-        fill(0);
-        textSize(50);
-        text("Connecting..", 375 - (textWidth("Connecting..") / 2), 100);
-        pop();
     }
 }
 
-/* FUNCTIONS */
-/** Function to change preferred settings applied throughout the project */
-function style() {
-    rectMode(CENTER);
-    textAlign(CENTER, CENTER)
+/** Clears destroyed environment from scenery list */
+function clearSceneList() {
+    for (i = 0; i < scene.length; i++){
+        if (scene[i].health <= 0)
+            scene.splice(i, 1);
+    }
 }
 
-function preload(){
-    song = loadSound('song.mp3');
-    firing = loadSound('firing.mp3')
-}
-
-function setup() {
-    style()
-    createCanvas(750, 700);
-    song.setVolume(0.1);
-    song.play();
-    song.loop();
+/** Clear projectiles from master list when their lifespan is up */
+function clearProjectilesList(){
+    for (i = 0; i < shots.length; i++){
+        shots[i].render();
+        if (shots[i].life == false)
+            shots.splice(i, 1);
+    }
 }
 
 /**
@@ -657,3 +633,57 @@ function mousePressed() {
     
 }
 
+/* MAIN FUNCTIONS */
+function setup() {
+    style()
+    createCanvas(750, 700);
+    song.setVolume(0.1);
+    song.play();
+    song.loop();
+}
+
+function draw() {
+    textSize(32);
+    if (main.screen != 'play')
+        background(126, 200, 80)
+    if (connected) {
+        renderScreen(375, 200);
+        if (main.screen == 'play') {
+            background(0, 0, 255)
+            keyControl();
+            render();
+            keyControl();
+            renderScreen();
+            stat_render();
+            player.move_velocity();
+            player.calc_score();
+            checkSceneCollision();
+            clearProjectilesList();
+            clearSceneList();
+            for (i = 0; i < shots.length; i++){
+                shots[i].render()
+            //console.log(shots.length)
+            }
+        }
+    } else {
+        push();
+        fill(0);
+        textSize(50);
+        text("Connecting..", 375 - (textWidth("Connecting..") / 2), 100);
+        pop();
+    }
+}
+
+function keyPressed() {
+    if (keyCode == 32)
+        shoot();
+    if (key.toLowerCase() in controls)
+        controls[key.toLowerCase()] = true;
+    return false;
+}
+
+function keyReleased() {
+    if (key.toLowerCase() in controls)
+        controls[key.toLowerCase()] = false;
+    return false;
+}
