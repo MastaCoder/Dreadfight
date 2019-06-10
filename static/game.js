@@ -612,11 +612,8 @@ function preload() {
 function setup() {
     style()
     createCanvas(750, 700);
-<<<<<<< HEAD
     song.setVolume(0.05);
     song.loop();
-=======
->>>>>>> b62d4a492abbcac69dd7de0b152d15079bd85995
 }
 
 /**
@@ -674,5 +671,4 @@ function mousePressed() {
     } 
     else if (main.screen == 'play')
         shoot();
-    
 }
