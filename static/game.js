@@ -70,6 +70,7 @@ class Car {
 
     draw() {
         if (this.type == 0) {
+            song.stop();
             noStroke();
             fill(0);
             rect(0, 0, 50, 100);
@@ -87,7 +88,9 @@ class Car {
             rect(-26.5, 30, 3, 20);
             rect(26.5, -20, 3, 20);
             rect(26.5, 30, 3, 20);
+
         } else if (this.type == 1) {
+            song.play();
             strokeWeight(2);
             stroke(0);
             fill(255, 0, 0);
@@ -107,30 +110,27 @@ class Car {
             rect(-26.5, 30, 3, 20);
             rect(26.5, -20, 3, 20);
             rect(26.5, 30, 3, 20);
+
         } else if (this.type == 2) {
+            song.stop();
             strokeWeight(1)
             fill(255);
             rect(0, 0, 50, 100);
-            
             noStroke();
             fill(255, 0, 0);
             rect(20, 0, 10, 100);
             rect(-20, 0, 10, 100);
             rect(0, 45, 30, 10);
-
             fill(0)
             rect(0, 0, 10, 100);
             rect(12.5, -45, 5, 10);
             rect(-12.5, -45, 5, 10);
-
             fill(0, 0, 255);
             rect(-7.5, -45, 5, 10);
             rect(7.5, -45, 5, 10);
-
             fill(244, 241, 66);
             rect(20, 45, 10, 10);
             rect(-20, 45, 10, 10);
-
             fill(0)
             rect(-26.5, -20, 3, 20)
             rect(-26.5, 30, 3, 20)
@@ -594,8 +594,7 @@ function preload(){
 function setup() {
     style()
     createCanvas(750, 700);
-    song.setVolume(0.1);
-    song.play();
+    song.setVolume(0.05);
     song.loop();
 }
 
@@ -656,4 +655,3 @@ function mousePressed() {
         shoot();
     
 }
-
