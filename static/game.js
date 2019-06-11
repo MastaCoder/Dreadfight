@@ -1,5 +1,7 @@
 var socket = io(),
-    song, firing, deja;
+    song, firing, deja,
+    current_drift = false,
+    leaderboard = [];
 
 /* ClASSES */
 class main {
@@ -199,7 +201,6 @@ class Car {
                 deja.setVolume(0.1);
                 deja.play();
                 current_drift = true;
-                console.log("drifting");
             }
         } else {
             if (current_drift)
@@ -236,6 +237,12 @@ class Car {
 
     calc_score() {
         this.score = seconds;
+    }
+
+    calc_speed() {
+        let speed = Math.sqrt((this.velocity[0] ** 2) + (this.velocity[1] ** 2));
+        if (speed == NaN || speed == 0) return 6;
+        else return speed / 5;
     }
 }
 
@@ -274,7 +281,6 @@ class Scene {
             fill(86, 47, 11);
             ellipse(0, 0, 25, 25);
         } else if (this.type == 2) {
-
             fill(150, 104, 40);
             noStroke();
 
@@ -328,13 +334,14 @@ class Canon {
 }
 
 class Projectile {
-    constructor(x, y, angle, currentLife, owner) {
+    constructor(x, y, angle, currentLife, owner, speed) {
         this.x = x;
         this.y = y;
         this.angle = angle;
         this.currentLife = currentLife;
         this.life = true;
         this.owner = owner;
+        this.speed = speed;
     }
 
     checkLife() {
@@ -345,8 +352,6 @@ class Projectile {
     }
 
     draw(off_x, off_y) {
-        console.log(this.x + 375 - off_x, this.y + 350)
-        console.log(this.x + 375 - off_x, this.y + 350 - off_y)
         push();
         translate(this.x + 375 - off_x, this.y + 350 - off_y);
         rotate(1.570796325);
@@ -362,16 +367,16 @@ class Projectile {
         noStroke();
         triangle(0, 15, -5, 10, 5, 10);
 
-        fill(0);
-        textSize(30);
-        text(this.owner, 0, 0);
+        // fill(0);
+        // textSize(30);
+        // text(this.owner, 0, 0);
 
         pop();
     }
 
     move() {
-        this.x += 5 * cos(this.angle);
-        this.y += 5 * sin(this.angle);
+        this.x += this.speed * cos(this.angle);
+        this.y += this.speed * sin(this.angle);
     }
 
     render(off_x, off_y) {
@@ -390,7 +395,6 @@ function incrementSeconds() {
 
 /* VARIABLES */
 main = new main();
-
 scrolly = 700; // initial y position of scrolling text in credits screen
 
 /** object to store what keys player is holding down */
@@ -402,11 +406,8 @@ var controls = {
 };
 
 var seconds = 0;
-
 var el = document.getElementById('seconds-counter');
-
 var drift = [];
-
 var cancel = setInterval(incrementSeconds, 10000);
 
 var player,
@@ -432,6 +433,8 @@ socket.on('handshake', function(data) {
         }
     }
 
+    player.x = data[2][0];
+    player.y = data[2][1];
     connected = true;
 });
 
@@ -444,9 +447,14 @@ socket.on('catchup', function(data) {
         players[data[1]].angle = data[3];
     } else if (data[0] == "disconnect")
         delete players[data[1]];
-    else if (data[0] == 'shot') { // ['shot', [x, y], angle, owner]
-        shots.push(new Projectile(data[1][0], data[1][1], data[2], 200, data[3]));
+    else if (data[0] == 'shot') { // ['shot', [x, y], angle, owner, speed]
+        shots.push(new Projectile(data[1][0], data[1][1], data[2], new Date().getTime(), data[3], data[4]));
     }
+});
+
+socket.on('leaderboard', function(data) {
+    leaderboard = data;
+    console.log(leaderboard);
 });
 
 /* FUNCTIONS */
@@ -458,7 +466,8 @@ function style() {
 
 function preload(){
     song = loadSound('song.mp3');
-    firing = loadSound('firing.mp3')
+    firing = loadSound('firing.mp3');
+    deja = loadSound('drift.mp3');
 }
 
 function render() {
@@ -480,17 +489,28 @@ function render() {
         }
     }
 
-    for (let i = 0; i < scene.length; i++) {
-        scene[i].render(player.x, player.y);
+    player.player_render();
+    canon.render();
+    canon.update_pos();
+
+    for (let i in shots) {
+        shots[i].render(player.x, player.y);
     }
 
     for (let i in players) {
         players[i].render(player.x, player.y);
     }
+    
+    for (let i = 0; i < scene.length; i++) {
+        scene[i].render(player.x, player.y);
+    }
 
-    player.player_render();
-    canon.render();
-    canon.update_pos();
+    for (let i in leaderboard) {
+        push();
+        textSize(15);
+        fill(0);
+        textAlign(RIGHT);
+    }
 }
 
 function calculate_vector(angle, constant) {
@@ -513,7 +533,6 @@ function calculate_vector(angle, constant) {
 
 function stat_render() {
     push();
-    textAlign(LEFT);
     textSize(13);
     textAlign(LEFT);
     text("Tick: " + frameCount, 10, 20);
@@ -562,8 +581,8 @@ function keyControl() {
 function shoot() {
     firing.setVolume(0.1);
     firing.play();
-    shots.push(new Projectile(player.x, player.y, canon.angle, new Date().getTime()));
-    //console.log(player.x, player.x)
+    shots.push(new Projectile(player.x, player.y, canon.angle, new Date().getTime(), player.id, player.calc_speed()));
+    socket.emit("shot", [[player.x, player.y], canon.angle, player.id, player.calc_speed()]);
 }
 
 /** Checks if projectiles fired from the player collides with environment */
@@ -575,13 +594,25 @@ function checkSceneCollision(){
         if (scene[i].type == 2)
             radius = 75;
         for (n = 0; n < shots.length; n++){
-            if (dist(shots[n].x + player.x, shots[n].y + player.y, scene[i].x, scene[i].y) <= 25 + radius) {
+            if (dist(shots[n].x, shots[n].y, scene[i].x, scene[i].y) <= 25 + radius) {
                 shots.splice(n, 1);
                 scene[i].health -= 1;
-                //console.log('yest')
             }
         }
     }
+}
+
+function checkShot() {
+    for (let n in shots) {
+        if (shots[n].owner != player.id && dist(shots[n].x, shots[n].y, player.x, player.y) <= 25 + 10)
+            dead(shots[n].owner);
+    }
+}
+
+function dead(owner) {
+    socket.emit("killed", [player.id, owner]); // who died, by who?
+    main.screen = "dead";
+    socket.disconnect();
 }
 
 /** Clears destroyed environment from scenery list */
@@ -595,7 +626,6 @@ function clearSceneList() {
 /** Clear projectiles from master list when their lifespan is up */
 function clearProjectilesList(){
     for (i = 0; i < shots.length; i++){
-        shots[i].render();
         if (shots[i].life == false)
             shots.splice(i, 1);
     }
@@ -696,12 +726,9 @@ function draw() {
             player.move_velocity();
             player.calc_score();
             checkSceneCollision();
+            checkShot();
             clearProjectilesList();
             clearSceneList();
-            for (i = 0; i < shots.length; i++){
-                shots[i].render()
-            //console.log(shots.length)
-            }
         }
     } else {
         push();
