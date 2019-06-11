@@ -510,6 +510,8 @@ function render() {
         textSize(15);
         fill(0);
         textAlign(RIGHT);
+        text(leaderboard[i][0] + " - " + leaderboard[i][1], 730, 600 + (i * 20));
+        pop();
     }
 }
 
