@@ -334,14 +334,14 @@ class Canon {
 }
 
 class Projectile {
-    constructor(x, y, angle, currentLife, owner, speed) {
+    constructor(x, y, angle, currentLife, owner, velocity) {
         this.x = x;
         this.y = y;
         this.angle = angle;
         this.currentLife = currentLife;
         this.life = true;
         this.owner = owner;
-        this.speed = speed;
+        this.velocity = velocity;
     }
 
     checkLife() {
@@ -367,21 +367,20 @@ class Projectile {
         noStroke();
         triangle(0, 15, -5, 10, 5, 10);
 
-        // fill(0);
-        // textSize(30);
-        // text(this.owner, 0, 0);
-
         pop();
     }
 
     move() {
-        this.x += this.speed * cos(this.angle);
-        this.y += this.speed * sin(this.angle);
+        if (this.velocity == [0, 0])
+            return false;
+
+        this.x += this.velocity[0] * 0.1;
+        this.y -= this.velocity[1] * 0.1;
     }
 
     render(off_x, off_y) {
         this.checkLife();
-        if (this.life == true) {
+        if (this.life) {
             this.move();
             this.draw(off_x, off_y);
         }
@@ -549,7 +548,7 @@ function keyControl() {
     player.driving = false;
     
     if (controls['w']) {
-        let vectors = calculate_vector(player.angle, 1.3); // check for vectors
+        let vectors = calculate_vector(player.angle, 1.1); // check for vectors
         player.boost(vectors[0], vectors[1]);
         player.driving = true;
         player.reverse = false;
@@ -583,7 +582,14 @@ function keyControl() {
 function shoot() {
     firing.setVolume(0.1);
     firing.play();
-    shots.push(new Projectile(player.x, player.y, canon.angle, new Date().getTime(), player.id, player.calc_speed()));
+    
+    // Speed calc
+    let total = Math.sqrt((player.velocity[0] ** 2) + (player.velocity[1] ** 2));
+    if (total == 0) total = 1;
+    total += 50;
+    let vect = calculate_vector(degrees(canon.angle) + 90, total);
+
+    shots.push(new Projectile(player.x, player.y, canon.angle, new Date().getTime(), player.id, vect));
     socket.emit("shot", [[player.x, player.y], canon.angle, player.id, player.calc_speed()]);
 }
 
@@ -612,9 +618,14 @@ function checkShot() {
 }
 
 function dead(owner) {
-    socket.emit("killed", [player.id, owner]); // who died, by who?
+    socket.emit("score", [owner, 10]); // who died, by who?
     main.screen = "dead";
     socket.disconnect();
+}
+
+function increase_score(increase) {
+    socket.emit("score", [player.id, increase]);
+    player.score += increase;
 }
 
 /** Clears destroyed environment from scenery list */
@@ -726,7 +737,6 @@ function draw() {
             renderScreen();
             stat_render();
             player.move_velocity();
-            player.calc_score();
             checkSceneCollision();
             checkShot();
             clearProjectilesList();
@@ -739,6 +749,9 @@ function draw() {
         text("Connecting..", 375 - (textWidth("Connecting..") / 2), 100);
         pop();
     }
+
+    if (frameCount % 500 == 0 && main.screen == "play")
+        increase_score(1);
 }
 
 function keyPressed() {

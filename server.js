@@ -64,11 +64,14 @@ io.on('connection', function(socket) {
     socket.on('shot', function(data) {
         socket.broadcast.emit('catchup', ['shot', data[0], data[1], data[2], data[3]]); // ['shot', [x, y], angle, owner, speed]
     });
-    socket.on("killed", function(data) {
-        let find_i = array_lookup(data[1], scores, 1);
-        scores[find_i][0]++;
+    socket.on("score", function(data) {
+        let find_i = array_lookup(data[0], scores, 1);
+        console.log(scores);
+        console.log(data);
+        scores[find_i][0] += data[1];
         scores = merge_sort(scores);
         socket.broadcast.emit('leaderboard', scores.slice(0, 5));
+        socket.emit("leaderboard", scores.slice(0, 5))
     });
 });
 
