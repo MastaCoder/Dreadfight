@@ -26,6 +26,7 @@ console.log("---------------------------------------------")
 
 // ---------------- GAME CODE -----------------------
 
+// Base array stuff
 clients = {}; 
 players = {}; // Type, Location, Rotation, Car Type
 scores = [];
@@ -39,63 +40,93 @@ for (let i = 0; i < 50; i++) {
     map.push([[x, y], obj]);
 }
 
+/**
+ * Function that is run when the socket connects
+*/
 io.on('connection', function(socket) {
-    let car_type = Math.floor(Math.random() * (3 - 0)) + 0;
-    let location = [Math.floor(Math.random() * 4001) - 2000, Math.floor(Math.random() * 4001) - 2000]
-    clients[socket.id] = socket;
-    players[socket.id] = [1, location, 0, car_type];
-    scores.push([0, socket.id]);
-    scores = merge_sort(scores);
-    socket.emit("handshake", [players, map, location]);
-    socket.emit('leaderboard', scores.slice(0, 5));
+    // Welcome handshake
+    let car_type = Math.floor(Math.random() * (3 - 0)) + 0; // Car type
+    let location = [Math.floor(Math.random() * 4001) - 2000, Math.floor(Math.random() * 4001) - 2000]; // Random location
+    clients[socket.id] = socket; // Add to clients
+    players[socket.id] = [1, location, 0, car_type]; // Add to players
+    scores.push([0, socket.id]); // Add to scores
+    scores = merge_sort(scores); // Sort scores
+    socket.emit("handshake", [players, map, location]); // Send back the handshake data
+    socket.emit('leaderboard', scores.slice(0, 5)); // Send back leaderboard
+
+    // Emit ot all about the connection
     socket.broadcast.emit("catchup", ['connected', socket.id, location, 0, car_type]);
     console.log("[GAME] Player connected:", socket.id);
+
+    /**
+     * Function when the socket disconnects
+    */
     socket.on('disconnect', function() {
         console.log("[GAME] Player disconnected:", socket.id);
-        delete clients[socket.id];
-        delete players[socket.id];
-        socket.broadcast.emit("catchup", ['disconnect', socket.id])
+        delete clients[socket.id]; // Remove the client
+        delete players[socket.id]; // Remove the player
+        socket.broadcast.emit("catchup", ['disconnect', socket.id]); // Emit to others
     });
+
+    /**
+     * Function when the socket updates a location
+    */
     socket.on('update', function(data) { // loc, angle
-        players[socket.id][1] = data[0];
-        players[socket.id][2] = data[1];
-        socket.broadcast.emit("catchup", ['update', socket.id, data[0], data[1]]);
+        players[socket.id][1] = data[0]; // Get the x
+        players[socket.id][2] = data[1]; // Get the y
+        socket.broadcast.emit("catchup", ['update', socket.id, data[0], data[1]]); // Emit new player data
     });
+
+    /**
+     * Player has shot a bullet on socket.
+    */
     socket.on('shot', function(data) {
         socket.broadcast.emit('catchup', ['shot', data[0], data[1], data[2], data[3]]); // ['shot', [x, y], angle, owner, speed]
     });
+
+    /**
+     * Score is increased for a player.
+    */
     socket.on("score", function(data) {
-        let find_i = array_lookup(data[0], scores, 1);
-        console.log(scores);
-        console.log(data);
-        scores[find_i][0] += data[1];
-        scores = merge_sort(scores);
-        socket.broadcast.emit('leaderboard', scores.slice(0, 5));
-        socket.emit("leaderboard", scores.slice(0, 5))
+        let find_i = array_lookup(data[0], scores, 1); // Find user in the scores
+        scores[find_i][0] += data[1]; // Increase
+        scores = merge_sort(scores); // Sort the scores
+        socket.broadcast.emit('leaderboard', scores.slice(0, 5)); // Send to all
+        socket.emit("leaderboard", scores.slice(0, 5)) // Send back to player
     });
 });
 
+/**
+ * Custom function to render on the screen.
+ * @param {array} arr - base array to merge
+*/
 function merge_sort(arr) {
     if (arr.length == 1)
-        return arr;
+        return arr; // Don't split 1 length
 
-    let middle = Math.floor(arr.length / 2);
-    let left = arr.slice(0, middle);
-    let right = arr.slice(middle);
+    let middle = Math.floor(arr.length / 2); // middle of array
+    let left = arr.slice(0, middle); // Left side
+    let right = arr.slice(middle); // Right side
 
+    // Run merge sort on both sides.
     return merge(
         merge_sort(left),
         merge_sort(right)
     )
 }
 
+/**
+ * Minor merge sort function
+ * @param {array} left - left side of the array
+ * @param {array} right - right side of the array
+*/
 function merge(left, right) {
-    let res = []
-    let iLeft = 0
-    let iRight = 0
+    let res = []; // Result
+    let iLeft = 0; // Left index
+    let iRight = 0; // Right index
 
-    while (iLeft < left.length && iRight < right.length) {
-        if (left[iLeft][0] > right[iRight][0]) {
+    while (iLeft < left.length && iRight < right.length) { // Loop to the end
+        if (left[iLeft][0] > right[iRight][0]) { // Sort
             res.push(left[iLeft]);
             iLeft++;
         } else {
@@ -104,20 +135,19 @@ function merge(left, right) {
         }
     }
 
+    // Combine the list with concat
     return res.concat(left.slice(iLeft)).concat(right.slice(iRight))
 }
 
 // Taken from https://gist.github.com/narottamdas/26aca662b6eb19322789ec98a445eb18
 function array_lookup(searchValue, array, searchIndex) {
-  var returnVal = null;
-  var i;
-  for(i=0; i<array.length; i++) {
-    if(array[i][searchIndex]==searchValue)
-    {
-      returnVal = i;
-      break;
+    var returnVal = null;
+    for (let i = 0; i < array.length; i++) {
+        if (array[i][searchIndex] == searchValue) {
+            returnVal = i; 
+            break;
+        }
     }
-  }
-  
-  return returnVal;
+
+    return returnVal;
 }

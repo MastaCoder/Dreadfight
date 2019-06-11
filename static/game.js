@@ -1,14 +1,44 @@
+/* 
+______                    _  __ _       _     _   
+|  _  \                  | |/ _(_)     | |   | |  
+| | | |_ __ ___  __ _  __| | |_ _  __ _| |__ | |_ 
+| | | | '__/ _ \/ _` |/ _` |  _| |/ _` | '_ \| __|
+| |/ /| | |  __/ (_| | (_| | | | | (_| | | | | |_ 
+|___/ |_|  \___|\__,_|\__,_|_| |_|\__, |_| |_|\__|
+ - A top down car shooter.         __/ |          
+ - Made by Makan, Anthony, & Gary |___/   
+
+ */
+
+// Base variables
 var socket = io(),
-    song, firing, deja,
+    song, firing, deja, 
     current_drift = false,
     leaderboard = [];
 
 /* ClASSES */
+
+/**
+ * Main class for the screen. 
+*/
 class main {
+    // Function for the screen (?)
     constructor(screen = 'main') {
         this.screen = screen;
     }
 }
+
+/** class Car
+    * @param {double} x - x coordinate of the player
+    * @param {double} y - y coordinate of the player
+    * @param {double} angele -  the angle of the player facing
+    * @param {double} velocity - [velocity in x, velocity in y]
+    * @param {integer} type - type of the object
+    * @param {string} id - id of the client
+    * @param {integer} score - score of the player
+    * @param {boolean} driving - if the player is driving
+    * @param {boolean} reverse - if the player is reversing
+*/
 
 class Car {
     constructor(x, y, id, type) {
@@ -23,10 +53,12 @@ class Car {
         this.reverse = false;
     }
 
+    //Function that moves player up
     move(up) {
         this.y -= up;
     }
 
+    //Function that render player
     player_render() {
         push();
         translate(375, 350);
@@ -35,6 +67,7 @@ class Car {
         pop();
     }
 
+    //Function that render player when turning
     render(off_x, off_y) {
         push();
         translate(this.x + 375 - off_x, this.y + 350 - off_y);
@@ -43,7 +76,9 @@ class Car {
         pop();
     }
 
+    //render cars
     draw() {
+        //skin 1
         if (this.type == 0) {
             noStroke();
             fill(0);
@@ -63,6 +98,7 @@ class Car {
             rect(26.5, -20, 3, 20);
             rect(26.5, 30, 3, 20);
 
+        //skin 2
         } else if (this.type == 1) {
             strokeWeight(2);
             stroke(0);
@@ -84,6 +120,7 @@ class Car {
             rect(26.5, -20, 3, 20);
             rect(26.5, 30, 3, 20);
 
+         //skin 3
         } else if (this.type == 2) {
             strokeWeight(1)
             fill(255);
@@ -122,14 +159,17 @@ class Car {
         fill(0);
     }
 
+    //Function that rotates the car
     rotate(angle) {
         this.angle += angle;
     }
 
+    //Function: calculate velocity
     move_velocity() {
         let angle, friction,
             quad = 0;
 
+        //scene collision check
         let t_x = player.x + (this.velocity[0] * 0.1),
             t_y = player.y - (this.velocity[1] * 0.1);
         if (t_x < -1975 || t_x > 1975 || t_y < -1975 || t_y > 1975)
@@ -193,6 +233,7 @@ class Car {
             }
         }
 
+        //checking if the car is drifting
         if (quad > 0 && Math.abs(quad - this.angle) > 25) {
             if (!this.reverse) {
                 drift.push([0, [this.x, this.y]]);
@@ -202,18 +243,21 @@ class Car {
                 deja.play();
                 current_drift = true;
             }
+        //play audio while drifting
         } else {
             if (current_drift)
                 deja.stop();
             current_drift = false;
         }
 
+        //player collision check
         for (let i in players) {
             if (dist(player.x + (this.velocity[0] * 0.1), player.y - (this.velocity[1] * 0.1), players[i].x, players[i].y) <= 25 + 25) {
                 this.velocity = [0, 0];
             }
         }
 
+        //scene object collision check
         for (let i in scene) {
             let radius = 25;
             if (scene[i].type == 1)
@@ -229,23 +273,25 @@ class Car {
         this.y -= this.velocity[1] * 0.1;
     }
 
+    //Function that checks acceleration
     boost(bx, by) {
         if (Math.sqrt((this.velocity[0] ** 2) + (this.velocity[1] ** 2)) < 100) { // max speed
             this.velocity = [this.velocity[0] + bx, this.velocity[1] + by];
         }
     }
 
-    calc_score() {
-        this.score = seconds;
-    }
-
+    //Calculating the curent speed of the player
     calc_speed() {
         let speed = Math.sqrt((this.velocity[0] ** 2) + (this.velocity[1] ** 2));
         if (speed == NaN || speed == 0) return 6;
         else return speed / 5;
     }
 }
-
+/** class Scene
+* @param {double} x - x coordinate of the object
+* @param {double} y - y corrdinate of the object
+* @param {integer} type - stores which scenery object to draw
+*/
 class Scene {
     constructor(x, y, type) {
         this.type = type;
@@ -260,7 +306,9 @@ class Scene {
         pop();
     }
 
+    //Function that renders the scene objects
     draw() {
+        //rock
         if (this.type == 0) {
             strokeWeight(1);
             stroke(0)
@@ -270,6 +318,8 @@ class Scene {
             noStroke();
             fill(191, 201, 191);
             ellipse(12.5, -5, 15, 15);
+            
+        //tree
         } else if (this.type == 1) {
             noStroke()
             fill(24, 73, 24);
@@ -280,6 +330,8 @@ class Scene {
             stroke(0);
             fill(86, 47, 11);
             ellipse(0, 0, 25, 25);
+            
+        //huts
         } else if (this.type == 2) {
             fill(150, 104, 40);
             noStroke();
@@ -303,15 +355,16 @@ class Scene {
     }
 }
 
-class Canon {
+/** 
+* class Cannon 
+* @param {double} angle -  the direction of the cannon pointing
+*/
+class Cannon {
     constructor() {
         this.angle = 0;
     }
 
-    update_pos() {
-        // this.angle += 1;
-    }
-
+    //Method to render the canon
     render() {
         this.follow();
         push();
@@ -326,13 +379,22 @@ class Canon {
         pop();
     }
 
+    //Method to turn the canon based on the mouse position
     follow() {
         let dir = (atan2(mouseY - (700 / 2), mouseX - (750 / 2)) - this.angle) / 6.2831853;
         dir = (dir - round(dir)) * 6.2831853;
         this.angle += (dir * 0.1);
     }
 }
-
+/** class Projectile
+ * @param {float} x - stores the x position of the projectile
+ * @param {float} y - stores the y position of the projectile
+ * @param {float} angle - stores the angle the projectile is fired from
+ * @param {integer} currentLife - stores the time at which the projectile is shot
+ * @param {boolean} life - stores whether or not the projectile is still 'alive'
+ * @param {string} owner - stores the owner of the projectile fired
+ * @param {integer} velocity - stores the velocity of the projectile
+*/
 class Projectile {
     constructor(x, y, angle, currentLife, owner, velocity) {
         this.x = x;
@@ -343,7 +405,8 @@ class Projectile {
         this.owner = owner;
         this.velocity = velocity;
     }
-
+    
+    //Method to check if the projectile has been present longer than its lifespan
     checkLife() {
         this.currentTime = new Date().getTime();
         if (this.currentTime - this.currentLife >= 3000) {
@@ -351,6 +414,7 @@ class Projectile {
         }
     }
 
+    //Method to draw the projectile
     draw(off_x, off_y) {
         push();
         translate(this.x + 375 - off_x, this.y + 350 - off_y);
@@ -370,6 +434,7 @@ class Projectile {
         pop();
     }
 
+    //Method to move the projectile
     move() {
         if (this.velocity == [0, 0])
             return false;
@@ -378,6 +443,7 @@ class Projectile {
         this.y -= this.velocity[1] * 0.1;
     }
 
+    //Method to render the projectile drawing, movement & check if the projectile is still alive
     render(off_x, off_y) {
         this.checkLife();
         if (this.life) {
@@ -393,7 +459,7 @@ function incrementSeconds() {
 }
 
 /* VARIABLES */
-main = new main();
+main = new main(); // Main screen
 scrolly = 700; // initial y position of scrolling text in credits screen
 
 /** object to store what keys player is holding down */
@@ -404,39 +470,50 @@ var controls = {
     'd': false
 };
 
+// Base variables
 var seconds = 0;
 var el = document.getElementById('seconds-counter');
 var drift = [];
 var cancel = setInterval(incrementSeconds, 10000);
 
+// Custom variables
 var player,
     players = {},
     scene = [],
     connected = false,
-    canon,
-    shots = [];
+    cannon,
+    shots = []; // Stores all the projectiles fired in the game
 
+/**
+ * Socket function to check for initial handshake.
+*/
 socket.on('handshake', function(data) {
+    // Map items
     for (let i in data[1]) {
         let obj = data[1][i];
         scene.push(new Scene(obj[0][0], obj[0][1], obj[1]));
     }
 
+    // Car items
     for (let i in data[0]) {
         let car = data[0][i];
         if (socket.id != i)
             players[i] = new Car(car[1][0], car[1][1], i, car[3]);
         else {
             player = new Car(0, 0, socket.id, car[3]);
-            canon = new Canon();
+            cannon = new Cannon();
         }
     }
 
+    // Player location is sent by the server.
     player.x = data[2][0];
     player.y = data[2][1];
     connected = true;
 });
 
+/**
+ * Socket function to catchup with server data.
+*/
 socket.on('catchup', function(data) {
     if (data[0] == "connected") { // ['connected', socket.id, [200, 200], 0])
         players[data[1]] = new Car(data[2][0], data[2][1], data[3], data[4]);
@@ -447,63 +524,79 @@ socket.on('catchup', function(data) {
     } else if (data[0] == "disconnect")
         delete players[data[1]];
     else if (data[0] == 'shot') { // ['shot', [x, y], angle, owner, speed]
-        shots.push(new Projectile(data[1][0], data[1][1], data[2], new Date().getTime(), data[3], data[4]));
+        shots.push(new Projectile(data[1][0], data[1][1], data[2], new Date().getTime(), data[3], data[4], data[5]));
+        console.log(data[1][0], data[1][1]);
     }
 });
 
+/**
+ * Leaderboard socket function.
+*/
 socket.on('leaderboard', function(data) {
-    leaderboard = data;
-    console.log(leaderboard);
+    leaderboard = data; // Update data
 });
 
-/* FUNCTIONS */
-/** Function to change preferred settings applied throughout the project */
+/* CUSTOM FUNCTIONS */
+
+/**
+ * Main screen styling for text
+*/
 function style() {
-    rectMode(CENTER);
+    rectMode(CENTER); // Center rects and text.
     textAlign(CENTER, CENTER)
 }
 
+/**
+ * Preload audio to the screen
+*/
 function preload(){
+    // Song files.
     song = loadSound('song.mp3');
     firing = loadSound('firing.mp3');
     deja = loadSound('drift.mp3');
 }
 
+/**
+ * Custom function to render on the screen.
+*/
 function render() {
+    // Rendering for the map
     push();
     fill(126, 200, 80);
     translate(375 - player.x, 350 - player.y);
     rect(0, 0, 4000, 4000);
     pop();
 
+    // Drifting render
     removed = 0;
     fill(0);
     for (let i = 0; i < drift.length; i++) {
         if (drift[i - removed][0] > 50) {
-            drift.splice(i - removed, 1);
+            drift.splice(i - removed, 1); // Remove drift from the screen
             removed++;
         } else {
-            drift[i - removed][0]++;
-            ellipse(drift[i - removed][1][0] + 375 - player.x, drift[i - removed][1][1] + 350 - player.y, 50, 10);
+            drift[i - removed][0]++; // Add drift line
+            ellipse(drift[i - removed][1][0] + 375 - player.x, drift[i - removed][1][1] + 350 - player.y, 50, 10); 
         }
     }
 
+    // Canon and player render
     player.player_render();
-    canon.render();
-    canon.update_pos();
+    cannon.render();
 
-    for (let i in shots) {
+    // Shot render
+    for (let i in shots)
         shots[i].render(player.x, player.y);
-    }
 
-    for (let i in players) {
+    // Other player rendering
+    for (let i in players)
         players[i].render(player.x, player.y);
-    }
     
-    for (let i = 0; i < scene.length; i++) {
+    // Scene rendering
+    for (let i = 0; i < scene.length; i++)
         scene[i].render(player.x, player.y);
-    }
 
+    // Leaderboard rendering
     for (let i in leaderboard) {
         push();
         textSize(15);
@@ -514,17 +607,22 @@ function render() {
     }
 }
 
+/**
+ * Function to create text and text boxes
+ * @param {integer} owner - angle of the the vector
+ * @param {integer} constant - constant for the vector
+*/
 function calculate_vector(angle, constant) {
-    if (angle <= 90) {
+    if (angle <= 90) { // T1
         bx = Math.sin(radians(angle)) * constant;
         by = Math.cos(radians(angle)) * constant;
-    } else if (angle > 90 && angle <= 180) {
+    } else if (angle > 90 && angle <= 180) { // T2
         bx = Math.cos(radians(angle - 90)) * constant;
         by = -1 * Math.sin(radians(angle - 90)) * constant;
-    } else if (angle > 180 && angle <= 270) {
+    } else if (angle > 180 && angle <= 270) { // T3
         bx = -1 * Math.sin(radians(angle - 180)) * constant;
         by = -1 * Math.cos(radians(angle - 180)) * constant;
-    } else {
+    } else { // T4
         bx = -1 * Math.cos(radians(angle - 270)) * constant;
         by = Math.sin(radians(angle - 270)) * constant;
     }
@@ -532,10 +630,15 @@ function calculate_vector(angle, constant) {
     return [bx, by];
 }
 
+/**
+ * Render the mini stats onto screen.
+*/
 function stat_render() {
     push();
     textSize(13);
     textAlign(LEFT);
+
+    // Render text
     text("Tick: " + frameCount, 10, 20);
     text("Location: " + [Math.round(player.x), Math.round(player.y)], 10, 40);
     text("Angle: " + player.angle, 10, 60);
@@ -544,91 +647,121 @@ function stat_render() {
     pop();
 }
 
+/**
+ * Custom key function to run every tick.
+*/
 function keyControl() {
-    player.driving = false;
+    player.driving = false; // default not driving
     
-    if (controls['w']) {
+    if (controls['w']) { // Boost forward
         let vectors = calculate_vector(player.angle, 1.1); // check for vectors
-        player.boost(vectors[0], vectors[1]);
-        player.driving = true;
-        player.reverse = false;
-    } else if (controls['s']) {
-        let drop_angle = player.angle - 180;
+        player.boost(vectors[0], vectors[1]); // Boost vector
+        player.driving = true; // Player is driving
+        player.reverse = false; // Not reversing
+
+    } else if (controls['s']) { // Reverse
+        let drop_angle = player.angle - 180; // Reverse the angle
+        // Calculations
         if (player.angle - 180 < 0) 
             drop_angle = 180 + player.angle;
         let vectors = calculate_vector(drop_angle, 1.0); // check for vectors
         player.boost(vectors[0], vectors[1]);
-        player.reverse = true;
+        player.reverse = true; // Player is reversing
     }
 
+    // Speed calculations and turn angles
     let speed = Math.sqrt(player.velocity[0]**2 + player.velocity[1]**2)
     let turn_angle = (-(1 / 2750)) * ((speed - 50)**2) + 1.1;
     
+    // Don't allow turning when stopped.
     if (player.velocity[0] != 0 || player.velocity[1] != 0) {
-        if (controls['a']) {
+        if (controls['a']) { // Left
             if (player.angle - turn_angle < 0)
                 player.angle = 360 + player.angle;
             player.angle -= turn_angle;
-        } else if (controls['d']) {
+        } else if (controls['d']) { // Right
             if (player.angle + turn_angle > 360)
                 player.angle = player.angle + turn_angle - 360;
             player.angle += turn_angle;
         }
     }
 
-    socket.emit('update', [[player.x, player.y], player.angle])
+    socket.emit('update', [[player.x, player.y], player.angle]); // Update the player angle
 }
 
+/**
+ * Function to calculate and boost the rocket.
+*/
 function shoot() {
+    // Play firing sound.
     firing.setVolume(0.1);
     firing.play();
     
-    // Speed calc
+    // Calculate the vector
     let total = Math.sqrt((player.velocity[0] ** 2) + (player.velocity[1] ** 2));
     if (total == 0) total = 1;
     total += 50;
-    let vect = calculate_vector(degrees(canon.angle) + 90, total);
+    let vect = calculate_vector(degrees(cannon.angle) + 90, total);
 
-    shots.push(new Projectile(player.x, player.y, canon.angle, new Date().getTime(), player.id, vect));
-    socket.emit("shot", [[player.x, player.y], canon.angle, player.id, player.calc_speed()]);
+    // Add the vector
+    shots.push(new Projectile(player.x, player.y, cannon.angle, new Date().getTime(), player.id, vect));
+    socket.emit("shot", [[player.x, player.y], cannon.angle, player.id, vect]); // Send to server
 }
 
-/** Checks if projectiles fired from the player collides with environment */
+/**
+ * Check shot collisions with scenes
+*/
 function checkSceneCollision(){
-    for (let i in scene) {
-        let radius = 25;
+    for (let i in scene) { // Loop through scenery
+        let radius = 25; // Check for radius
         if (scene[i].type == 1)
             radius = 50;
         if (scene[i].type == 2)
             radius = 75;
-        for (n = 0; n < shots.length; n++){
-            if (dist(shots[n].x, shots[n].y, scene[i].x, scene[i].y) <= 25 + radius) {
-                shots.splice(n, 1);
-                scene[i].health -= 1;
+        for (n = 0; n < shots.length; n++) { // Loop through the shots
+            if (dist(shots[n].x, shots[n].y, scene[i].x, scene[i].y) <= 25 + radius) { // Anything collide?
+                shots.splice(n, 1); // Remove shot
+                scene[i].health -= 1; // Reduce health
             }
         }
     }
 }
 
+/**
+ * Check if a shot has hit a player.
+*/
 function checkShot() {
-    for (let n in shots) {
-        if (shots[n].owner != player.id && dist(shots[n].x, shots[n].y, player.x, player.y) <= 25 + 10)
-            dead(shots[n].owner);
+    for (let n in shots) { // Loop through shots
+        console.log(shots[n].owner != player.id, dist(shots[n].x, shots[n].y, player.x, player.y) <= 25 + 10);
+        if (shots[n].owner != player.id && dist(shots[n].x, shots[n].y, player.x, player.y) <= 25 + 15) { // Check collision with player
+            console.log("fuck");
+            dead(shots[n].owner); // Kill the player
+        }
     }
 }
 
+/**
+ * Function to create text and text boxes
+ * @param {string} owner - person that killed the player
+*/
 function dead(owner) {
-    socket.emit("score", [owner, 10]); // who died, by who?
-    main.screen = "dead";
-    socket.disconnect();
+    socket.emit("score", [owner, 10]); // params [killer, score_inc]
+    main.screen = "dead"; // move to death screen.
+    socket.disconnect(); // Disconnect from socket.
 }
 
+/**
+ * Function to create text and text boxes
+ * @param {integer} increase - How much to increase the score
+*/
 function increase_score(increase) {
-    socket.emit("score", [player.id, increase]);
-    player.score += increase;
+    socket.emit("score", [player.id, increase]); // Emit the score
+    player.score += increase; // Update local score
 }
 
-/** Clears destroyed environment from scenery list */
+/** 
+ * Clears destroyed environment from scenery list 
+*/
 function clearSceneList() {
     for (i = 0; i < scene.length; i++){
         if (scene[i].health <= 0)
@@ -636,11 +769,13 @@ function clearSceneList() {
     }
 }
 
-/** Clear projectiles from master list when their lifespan is up */
+/**
+ * Clear projectiles when their lifetime is up.
+*/
 function clearProjectilesList(){
-    for (i = 0; i < shots.length; i++){
-        if (shots[i].life == false)
-            shots.splice(i, 1);
+    for (i = 0; i < shots.length; i++) { // Loop through all
+        if (shots[i].life == false) // Still have life?
+            shots.splice(i, 1); // Remove them
     }
 }
 
@@ -648,11 +783,15 @@ function clearProjectilesList(){
  * Function to create text and text boxes
  * @param {integer} x - x position of center of screen
  * @param {integer} y - y position of center of screen
- */
+*/
 function renderScreen(x, y) { 
+    // Main menu
     if (main.screen == 'main') {
-        background(126, 200, 80)
+        // Misc
+        background(126, 200, 80);
         text('Welcome To Dread Fight', x, y - 100);
+        
+        // Buttons
         rect(x, y, 200, 50);
         rect(x, y + 100, 200, 50);
         rect(x, y + 200, 200, 50);
@@ -661,6 +800,7 @@ function renderScreen(x, y) {
         text('Credits', x, y + 200);
     }
 
+    // Death screen
     if (main.screen == 'dead') {
         background(255, 0, 0);
         fill(200);
@@ -670,22 +810,28 @@ function renderScreen(x, y) {
         text('Retry', x, y + 200);
     }
 
-    if (main.screen == 'play') {
-        song.stop();
-    }
+    // Play screen
+    if (main.screen == 'play')
+        song.stop(); // stop the music
+    
+    // How to play screen
     if (main.screen == 'howToPlay') {
-        var keys = [['[W]', '- Forward'], ['[A]', '- Turn Left'],['[S]', '- Backward'], ['[D]', '- Turn Right']]
-        for (i = 0; i < keys.length; i++) {
+        var keys = [['[W]', '- Forward'], ['[A]', '- Turn Left'],['[S]', '- Backward'], ['[D]', '- Turn Right'], ['MOUSE' - 'AIM'],['[SPACE]' - 'FIRE']]; // Controls
+        for (i = 0; i < keys.length; i++) // Draw to screen
             text(keys[i][0] + ' ' + keys[i][1], x, y + ((i - 2) * 50));
-        }
     }
+
+    // Credits
     if (main.screen == 'credits') {
         text('By Makan, Gary & Anthony', x, scrollY + 200);
         text('A Top-Down Car Shooter',x, scrollY + 100)
         text('DREAD FIGHT', x, scrollY);
-        scrollY -= 1;
+        scrollY -= 1; // Scroll down
     }
+
+    // How to play and credits
     if (main.screen == 'howToPlay' || main.screen == 'credits') {
+        // Button to return to the menu
         push();
         textSize(40);
         rectMode(CORNER);
@@ -696,41 +842,60 @@ function renderScreen(x, y) {
     }
 }
 
-/** Function to change game state based on location of mouse click */
+/** 
+ * Function that is run when the mouse is pressed.
+*/
+
 function mousePressed() {
+    // Main menu
     if ((mouseX >= 280 && mouseX <= 480) && (mouseY >= 180 && mouseY <= 230) && (main.screen == 'main'))
-        main.screen = 'play';
+        main.screen = 'play'; // Play button
     else if ((mouseX >= 280 && mouseX <= 480) && (mouseY >= 280 && mouseY <= 330) && (main.screen == 'main'))
-        main.screen = 'howToPlay';
+        main.screen = 'howToPlay'; // How to play button
     else if ((mouseX >= 280 && mouseX <= 480) && (mouseY >= 380 && mouseY <= 430) && (main.screen == 'main'))
-        main.screen = 'credits';
+        main.screen = 'credits'; // Credits button
+
+    // Death screen
     else if ((mouseX >= 280 && mouseX <= 480) && (mouseY >= 380 && mouseY <= 430) && (main.screen == 'dead'))
-        window.location.reload();
+        window.location.reload(); // Retry
+    
+    // Other screens
     else if ((mouseX >= 550 && mouseX <= 750) && (main.screen == 'howToPlay' || main.screen == 'credits') && (mouseY >= 650 && mouseY <= 700)) {
-        main.screen = 'main';
-        scrollY = 700;
-    } 
+        main.screen = 'main'; // Return to main menu
+        scrollY = 700; // For credits (?)
+    }
+
+    // Otherwise, if playing
     else if (main.screen == 'play')
-        shoot();
+        shoot(); // SHOOT
 }
 
 /* MAIN FUNCTIONS */
+
+/**
+ * Function that is run on setup
+*/
 function setup() {
-    style()
-    createCanvas(750, 700);
+    style(); // Styling
+    createCanvas(750, 700); // Canvas size
+    // Menu music
     song.setVolume(0.1);
     song.play();
     song.loop();
 }
 
+/**
+ * Function run when drawing to the screen.
+*/
 function draw() {
-    textSize(32);
-    if (main.screen != 'play')
-        background(126, 200, 80)
-    if (connected) {
+    textSize(32); // Larger text
+    if (main.screen != 'play') // Screen is not playing
+        background(126, 200, 80) // Green color of background
+    if (connected) { // When connected to the socket
         renderScreen(375, 200);
-        if (main.screen == 'play') {
-            background(0, 0, 255)
+        if (main.screen == 'play') { // Connected and playing
+            background(0, 0, 255); // Water background
+            // Functions run when playing
             keyControl();
             render();
             keyControl();
@@ -742,28 +907,35 @@ function draw() {
             clearProjectilesList();
             clearSceneList();
         }
-    } else {
+    } else { // Connecting to socket
         push();
-        fill(0);
-        textSize(50);
-        text("Connecting..", 375 - (textWidth("Connecting..") / 2), 100);
+        fill(0); // black
+        textSize(50); // Large text
+        text("Connecting..", 375 - (textWidth("Connecting..") / 2), 100); // Mark as connecting
         pop();
     }
 
+    // If playing, every 500 ticks increase score
     if (frameCount % 500 == 0 && main.screen == "play")
-        increase_score(1);
+        increase_score(1); // Update player score.
 }
 
+/**
+ * Function that is run when a key is pressed.
+*/
 function keyPressed() {
-    if (keyCode == 32)
+    if (keyCode == 32) // spacebar
         shoot();
-    if (key.toLowerCase() in controls)
-        controls[key.toLowerCase()] = true;
+    if (key.toLowerCase() in controls) 
+        controls[key.toLowerCase()] = true; // update controls array when pressed
     return false;
 }
 
+/**
+ * Function that is run when a key is released.
+*/
 function keyReleased() {
     if (key.toLowerCase() in controls)
-        controls[key.toLowerCase()] = false;
-    return false;
+        controls[key.toLowerCase()] = false; // update controls array when released
+    return false; // mark key as not pressed
 }
