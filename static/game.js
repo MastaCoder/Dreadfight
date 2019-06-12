@@ -544,7 +544,7 @@ socket.on('leaderboard', function(data) {
 */
 socket.on('news', function(data) {
     news[0] = data;
-    news[1] = 3000;
+    news[1] = 2000;
 });
 
 /* CUSTOM FUNCTIONS */
@@ -840,7 +840,7 @@ function renderScreen(x, y) {
     // How to play screen
     if (main.screen == 'howToPlay') {
         image(bg, 0, 0);
-        var keys = [['[W]', '- Forward'], ['[A]', '- Turn Left'],['[S]', '- Backward'], ['[D]', '- Turn Right'], ['MOUSE', '- AIM'],['[SPACE]', '- FIRE']]; // Controls
+        var keys = [['[W]', '- Forward'], ['[A]', '- Turn Left'], ['[S]', '- Backward'], ['[D]', '- Turn Right'], ['MOUSE', '- AIM'], ['[SPACE]', '- FIRE']]; // Controls
         for (i = 0; i < keys.length; i++) // Draw to screen
             text(keys[i][0] + ' ' + keys[i][1], x, y + ((i - 2) * 50));
     }

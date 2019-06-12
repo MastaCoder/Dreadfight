@@ -36,7 +36,7 @@ scores = [];
 
 // Map Generation
 map = [];
-for (let i = 0; i < 150; i++) {
+for (let i = 0; i < 50; i++) {
     let x = Math.floor(Math.random() * 4001) - 2000,
         y = Math.floor(Math.random() * 4001) - 2000,
         obj = Math.floor(Math.random() * (3 - 0)) + 0;
@@ -49,7 +49,7 @@ for (let i = 0; i < 150; i++) {
 io.on('connection', function(socket) {
     // Welcome handshake
     let car_type = Math.floor(Math.random() * (3 - 0)) + 0; // Car type
-    let location
+    let location;
 
     while (1) { // Safe spawn
         location = [Math.floor(Math.random() * 3801) - 1900, Math.floor(Math.random() * 3801) - 1900]; // Random location
