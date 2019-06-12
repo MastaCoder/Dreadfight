@@ -6,6 +6,8 @@ var socketIO = require('socket.io');
 var app = express();
 var server = http.Server(app);
 var io = socketIO(server);
+var figlet = require('figlet');
+var mathjs = require('mathjs');
 
 // Configuration
 app.set('port', 5000); // Port #
@@ -14,15 +16,16 @@ app.get('/', function(request, response) {
     response.sendFile(path.join(__dirname, 'index.html')); // send index
 });
 
-console.log("[INFO] DreadFight - A driving top-down shooter.")
-console.log("[INFO] Backend developed by Makan, Gary, & Anthony");
+figlet('Dreadfight', function(err, data) {
+    console.log(data);
+    console.log("[INFO] Backend developed by Makan, Gary, & Anthony");
+    console.log("---------------------------------------------");
+});
 
 // Initialization
 server.listen(5000, function() {
-    console.log("[GAME] Server is listening on port 5000.")
+    console.log("[GAME] Server is listening on port 5000.");
 });
-
-console.log("---------------------------------------------")
 
 // ---------------- GAME CODE -----------------------
 
@@ -33,7 +36,7 @@ scores = [];
 
 // Map Generation
 map = [];
-for (let i = 0; i < 50; i++) {
+for (let i = 0; i < 150; i++) {
     let x = Math.floor(Math.random() * 4001) - 2000,
         y = Math.floor(Math.random() * 4001) - 2000,
         obj = Math.floor(Math.random() * (3 - 0)) + 0;
@@ -46,13 +49,26 @@ for (let i = 0; i < 50; i++) {
 io.on('connection', function(socket) {
     // Welcome handshake
     let car_type = Math.floor(Math.random() * (3 - 0)) + 0; // Car type
-    let location = [Math.floor(Math.random() * 4001) - 2000, Math.floor(Math.random() * 4001) - 2000]; // Random location
+    let location
+
+    while (1) { // Safe spawn
+        location = [Math.floor(Math.random() * 3801) - 1900, Math.floor(Math.random() * 3801) - 1900]; // Random location
+        found = false; // Not found by default.
+        for (let i in map) {
+            if (mathjs.distance([map[i][0][0], map[i][0][1]], [location[0], location[1]]) < 75) { // Check all map objects
+                found = true;
+            }
+        }
+        if (!found) break; // Found a spot
+    }
+
     clients[socket.id] = socket; // Add to clients
     players[socket.id] = [1, location, 0, car_type]; // Add to players
     scores.push([0, socket.id]); // Add to scores
     scores = merge_sort(scores); // Sort scores
     socket.emit("handshake", [players, map, location]); // Send back the handshake data
     socket.emit('leaderboard', scores.slice(0, 5)); // Send back leaderboard
+    socket.emit("news", "Welcome to Dreadfight!");
 
     // Emit ot all about the connection
     socket.broadcast.emit("catchup", ['connected', socket.id, location, 0, car_type]);
@@ -88,11 +104,24 @@ io.on('connection', function(socket) {
      * Score is increased for a player.
     */
     socket.on("score", function(data) {
-        let find_i = array_lookup(data[0], scores, 1); // Find user in the scores
-        scores[find_i][0] += data[1]; // Increase
-        scores = merge_sort(scores); // Sort the scores
-        socket.broadcast.emit('leaderboard', scores.slice(0, 5)); // Send to all
-        socket.emit("leaderboard", scores.slice(0, 5)) // Send back to player
+        try {
+            let find_i = array_lookup(data[0], scores, 1); // Find user in the scores
+            scores[find_i][0] += data[1]; // Increase
+            scores = merge_sort(scores); // Sort the scores
+            socket.broadcast.emit('leaderboard', scores.slice(0, 5)); // Send to all
+            socket.emit("leaderboard", scores.slice(0, 5)) // Send back to player
+        } catch (err) {
+            console.log("[WARN] Score storing exception occurred.")
+        }
+    });
+
+    /**
+     * Score is increased for a player.
+    */
+    socket.on("news", function(data) {
+        socket.emit("news", data);
+        socket.broadcast.emit("news", data);
+        console.log("[GAME] News was sent out!");
     });
 });
 
@@ -112,7 +141,7 @@ function merge_sort(arr) {
     return merge(
         merge_sort(left),
         merge_sort(right)
-    )
+    );
 }
 
 /**

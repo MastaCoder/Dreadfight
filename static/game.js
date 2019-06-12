@@ -12,8 +12,9 @@ ______                    _  __ _       _     _
 
 // Base variables
 var socket = io(),
-    song, firing, deja, 
+    song, firing, deja, bg,
     current_drift = false,
+    news = ["", 0],
     leaderboard = [];
 
 /* ClASSES */
@@ -29,13 +30,12 @@ class main {
 }
 
 /** class Car
-    * @param {double} x - x coordinate of the player
-    * @param {double} y - y coordinate of the player
-    * @param {double} angele -  the angle of the player facing
-    * @param {double} velocity - [velocity in x, velocity in y]
+    * @param {float} x - x coordinate of the player
+    * @param {float} y - y coordinate of the player
+    * @param {float} angele -  the angle of the player facing
+    * @param {float} velocity - [velocity in x, velocity in y]
     * @param {integer} type - type of the object
     * @param {string} id - id of the client
-    * @param {integer} score - score of the player
     * @param {boolean} driving - if the player is driving
     * @param {boolean} reverse - if the player is reversing
 */
@@ -48,7 +48,6 @@ class Car {
         this.velocity = [0, 0]; // x, y
         this.type = type;
         this.id = id;
-        this.score = 0;
         this.driving = false;
         this.reverse = false;
     }
@@ -64,6 +63,8 @@ class Car {
         translate(375, 350);
         rotate(radians(this.angle));
         this.draw();
+        textSize(9);
+        text(this.id.slice(0, 8), 0, -60);
         pop();
     }
 
@@ -73,6 +74,8 @@ class Car {
         translate(this.x + 375 - off_x, this.y + 350 - off_y);
         rotate(radians(this.angle));
         this.draw();
+        textSize(9);
+        text(this.id.slice(0, 8), 0, -60);
         pop();
     }
 
@@ -497,9 +500,10 @@ socket.on('handshake', function(data) {
     // Car items
     for (let i in data[0]) {
         let car = data[0][i];
-        if (socket.id != i)
+        if (socket.id != i) {
             players[i] = new Car(car[1][0], car[1][1], i, car[3]);
-        else {
+            console.log(i);
+        } else {
             player = new Car(0, 0, socket.id, car[3]);
             cannon = new Cannon();
         }
@@ -516,7 +520,7 @@ socket.on('handshake', function(data) {
 */
 socket.on('catchup', function(data) {
     if (data[0] == "connected") { // ['connected', socket.id, [200, 200], 0])
-        players[data[1]] = new Car(data[2][0], data[2][1], data[3], data[4]);
+        players[data[1]] = new Car(data[2][0], data[2][1], data[1], data[4]);
     } else if (data[0] == "update") { // ['update', socket.id, data[0], data[1]] - data[0] loc - data[1] angle
         players[data[1]].x = data[2][0];
         players[data[1]].y = data[2][1];
@@ -525,7 +529,6 @@ socket.on('catchup', function(data) {
         delete players[data[1]];
     else if (data[0] == 'shot') { // ['shot', [x, y], angle, owner, speed]
         shots.push(new Projectile(data[1][0], data[1][1], data[2], new Date().getTime(), data[3], data[4], data[5]));
-        console.log(data[1][0], data[1][1]);
     }
 });
 
@@ -534,6 +537,14 @@ socket.on('catchup', function(data) {
 */
 socket.on('leaderboard', function(data) {
     leaderboard = data; // Update data
+});
+
+/**
+ * News is recieved from the server.
+*/
+socket.on('news', function(data) {
+    news[0] = data;
+    news[1] = 3000;
 });
 
 /* CUSTOM FUNCTIONS */
@@ -554,6 +565,7 @@ function preload(){
     song = loadSound('song.mp3');
     firing = loadSound('firing.mp3');
     deja = loadSound('drift.mp3');
+    bg = loadImage("assets/bg.png");
 }
 
 /**
@@ -597,13 +609,27 @@ function render() {
         scene[i].render(player.x, player.y);
 
     // Leaderboard rendering
+    push();
+    textSize(20);
+    fill(0);
+    text("Leaderboard", 675, 575);
+    pop();
     for (let i in leaderboard) {
         push();
         textSize(15);
-        fill(0);
         textAlign(RIGHT);
-        text(leaderboard[i][0] + " - " + leaderboard[i][1], 730, 600 + (i * 20));
+        text(leaderboard[i][0] + " - " + leaderboard[i][1].slice(0, 8), 730, 600 + (i * 20));
         pop();
+    }
+
+    if (news[1] > 0) {
+        push();
+        fill(0);
+        textAlign(LEFT);
+        textSize(30);
+        text(news[0], 10, 670);
+        pop();
+        news[1]--;
     }
 }
 
@@ -641,9 +667,8 @@ function stat_render() {
     // Render text
     text("Tick: " + frameCount, 10, 20);
     text("Location: " + [Math.round(player.x), Math.round(player.y)], 10, 40);
-    text("Angle: " + player.angle, 10, 60);
+    text("Angle: " + round(player.angle), 10, 60);
     text("Clients: " + (Object.keys(players).length + 1), 10, 80);
-    text("Score: " + player.score, 10, 100);
     pop();
 }
 
@@ -732,9 +757,7 @@ function checkSceneCollision(){
 */
 function checkShot() {
     for (let n in shots) { // Loop through shots
-        console.log(shots[n].owner != player.id, dist(shots[n].x, shots[n].y, player.x, player.y) <= 25 + 10);
         if (shots[n].owner != player.id && dist(shots[n].x, shots[n].y, player.x, player.y) <= 25 + 15) { // Check collision with player
-            console.log("fuck");
             dead(shots[n].owner); // Kill the player
         }
     }
@@ -756,7 +779,6 @@ function dead(owner) {
 */
 function increase_score(increase) {
     socket.emit("score", [player.id, increase]); // Emit the score
-    player.score += increase; // Update local score
 }
 
 /** 
@@ -789,6 +811,7 @@ function renderScreen(x, y) {
     if (main.screen == 'main') {
         // Misc
         background(126, 200, 80);
+        image(bg, 0, 0);
         text('Welcome To Dread Fight', x, y - 100);
         
         // Buttons
@@ -816,13 +839,15 @@ function renderScreen(x, y) {
     
     // How to play screen
     if (main.screen == 'howToPlay') {
-        var keys = [['[W]', '- Forward'], ['[A]', '- Turn Left'],['[S]', '- Backward'], ['[D]', '- Turn Right'], ['MOUSE' - 'AIM'],['[SPACE]' - 'FIRE']]; // Controls
+        image(bg, 0, 0);
+        var keys = [['[W]', '- Forward'], ['[A]', '- Turn Left'],['[S]', '- Backward'], ['[D]', '- Turn Right'], ['MOUSE', '- AIM'],['[SPACE]', '- FIRE']]; // Controls
         for (i = 0; i < keys.length; i++) // Draw to screen
             text(keys[i][0] + ' ' + keys[i][1], x, y + ((i - 2) * 50));
     }
 
     // Credits
     if (main.screen == 'credits') {
+        image(bg, 0, 0);
         text('By Makan, Gary & Anthony', x, scrollY + 200);
         text('A Top-Down Car Shooter',x, scrollY + 100)
         text('DREAD FIGHT', x, scrollY);
