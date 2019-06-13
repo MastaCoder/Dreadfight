@@ -551,9 +551,9 @@ function style() {
 */
 function preload(){
     // Song files.
-    song = loadSound('song.mp3');
-    firing = loadSound('firing.mp3');
-    deja = loadSound('drift.mp3');
+    song = loadSound('assets/song.mp3');
+    firing = loadSound('assets/firing.mp3');
+    deja = loadSound('assets/drift.mp3');
 }
 
 /**
